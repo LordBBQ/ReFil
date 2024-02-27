@@ -1,8 +1,13 @@
-#define SPOOL_MOTOR_STEPS_PER_ROT 100
+#define SPOOL_MOTOR_STEPS_PER_ROT 200
+#define GANTRY_MOTOR_STEPS_PER_ROT 200
 
 #define GANTRY_ENDSTOP_PIN 20
 
 #define TARGET_FILAMENT_DIAMETER 1.75
+
+#define SPOOL_MOTOR_STEP_PIN 4
+#define SPOOL_MOTOR_DIR_PIN 5
+#define SPOOL_MOTOR_EN_PIN 6
 
 int spoolStartingDiameter = 60;
 int spoolEndDiameter = 200;
@@ -17,6 +22,8 @@ boolean spoolWindingDirectionInvert = false; //default to back --> front
 void initSpooler() {
   rotationCount = 0;
   subRotationCount = 0;
+
+  pinMode(SPOOL_MOTOR_STEP_PIN, output);
 }
 
 /**
@@ -50,4 +57,9 @@ static double getGantryAlignmentPosition(double spoolStartPos, double spoolEndPo
   } else {
     return spoolEndPos - ((spoolEndPos - spoolStartPos)/spoolEffectiveWindingsPerLayer * subRotationCount);
   }
+}
+
+static void moveSpoolMotor(double rpm) {
+  unsigned long currentMicros = micros();
+  
 }
