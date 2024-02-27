@@ -1,5 +1,8 @@
 #include "Thermistors.h"
 #include "PIDController.h"
+#include "FilamentSensor.h"
+#include "EEPROMManager.h"
+#include "Spooler.h"
 
 //Heater 0 constants
 #define HEATER_0_KP 3

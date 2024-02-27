@@ -9,9 +9,17 @@
 #define DOUBLE_BYTE_LENGTH 8
 #define WIDTH_SENSOR_STORED_CAL_1MM_EEPROM_ADDR EEPROM_START_ADDRESS
 #define WIDTH_SENSOR_STORED_CAL_2MM_EEPROM_ADDR WIDTH_SENSOR_STORED_CAL_1MM_EEPROM_ADDR + DOUBLE_BYTE_LENGTH
-#define WIDTH_SENSOR_STORED_CAL_2MM_EEPROM_ADDR WIDTH_SENSOR_STORED_CAL_2MM_EEPROM_ADDR + DOUBLE_BYTE_LENGTH
+#define WIDTH_SENSOR_STORED_CAL_3MM_EEPROM_ADDR WIDTH_SENSOR_STORED_CAL_1MM_EEPROM_ADDR + 2 * DOUBLE_BYTE_LENGTH
 
-String eepromInitCode = "INIT_OK"
+char eepromInitCode[] = {
+  'I',
+  'N',
+  'I',
+  'T',
+  '_',
+  'O',
+  'K',
+};
 boolean EEPROMInitExec = false;
 
 /**
@@ -19,12 +27,12 @@ boolean EEPROMInitExec = false;
  * all the EEPROM memory
  */
 boolean initEEPROM() {
-  if(EEPROM.read(EEPROM_CHK_ADDRESS) == eepromInitCode) {
+  if(String(EEPROM.read(EEPROM_CHK_ADDRESS)) == eepromInitCode) {
     EEPROMInitExec = true;
     return true;
   } else {
     if(!EEPROMInitExec) {
-      for(i = 1; i <= EEPROM_LENGTH; i++) {
+      for(byte i = 1; i <= EEPROM_LENGTH; i++) {
         EEPROM.update(i, 0); 
         delay(EEPROM_DELAY); //EEPROM takes 3.3ms to udpate datapoint
       }
