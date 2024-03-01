@@ -24,18 +24,21 @@ void initSpooler() {
   subRotationCount = 0;
 
   pinMode(SPOOL_MOTOR_STEP_PIN, output);
+  pinMode(SPOOL_MOTOR_DIR_PIN, output);
+  pinMode(SPOOL_MOTOR_EN_PIN, output);
+
 }
 
 /**
  * Calculates the desired rotation based on how much filament has been spooled.
  */
-static double getSpoolRotationDistance(double desiredPullDistance, double spoolStartDiameter, double spoolStartPos, double spoolEndPos) {
+static double getSpoolRotationDistance(double desiredPullSpeed, double spoolStartDiameter, double spoolStartPos, double spoolEndPos) {
   int spoolEffectiveWindingsPerLayer = (spoolEndPos - spoolStartPos) / TARGET_FILAMENT_DIAMETER;
   //calculate the effective diameter of the spool based on num of layers, remembering to add 1/2 of the diameter for the center of the filament strand.
   double spoolEffectiveDiameter = spoolStartDiameter + (rotationCount / spoolEffectiveWindingsPerLayer * TARGET_FILAMENT_DIAMETER + TARGET_FILAMENT_DIAMETER/2);
   //calculate the effective circumference of one layer of the spool based on effective diameter
   double spoolEffectiveCircumference = spoolEffectiveDiameter * PI;
-  double requiredRotationDistance = spoolEffectiveCircumference / desiredPullDistance; //caclulate requried rotation
+  double requiredRotationDistance = spoolEffectiveCircumference / desiredPullSpeed; //caclulate requried rotation
   if(subRotationCount >= spoolEffectiveWindingsPerLayer) {
     rotationCount += 1;
     spoolWindingDirectionInvert = !spoolWindingDirectionInvert;
@@ -59,7 +62,22 @@ static double getGantryAlignmentPosition(double spoolStartPos, double spoolEndPo
   }
 }
 
-static void moveSpoolMotor(double rpm) {
-  unsigned long currentMicros = micros();
-  
-}
+static void moveSpoolMotor(double rpm, boolean dir) {
+  unsigned long previousMicros = micros();
+  unsigned long desiredPulseMicros = ((60*1000*1000)/rpm) //converting rpm to min/r, then converting to sec, ms, us...
+  digitalWrite(SPOOL_MOTOR_EN_PIN, HIGH); //pull enable pin high to enguage the driver
+
+  if(SPOOL_MOTOR_DIR_PIN) { //set dir pin
+    digitalWrite(SPOOL_MOTOR_DIR_PIN, HIGH);
+  } else {
+    digitalWrite(SPOOL_MOTOR_DIR_PIN, LOW);
+  }
+
+  if((micros() - previousMicros) >= (desiredPulseMicros/2)) {
+    previousMicros = micros();
+    digitalWrite(SPOOL_MOTOR_STEP_PIN, HIGH);
+    if((micros() - previousMicros) >= (desiredPulseMicros/2)) {
+      previousMicros = micros();
+      digitalWrite(SPOOL_MOTOR_STEP_PIN, LOW);
+    }
+  } 
