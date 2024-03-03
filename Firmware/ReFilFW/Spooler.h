@@ -23,9 +23,9 @@ void initSpooler() {
   rotationCount = 0;
   subRotationCount = 0;
 
-  pinMode(SPOOL_MOTOR_STEP_PIN, output);
-  pinMode(SPOOL_MOTOR_DIR_PIN, output);
-  pinMode(SPOOL_MOTOR_EN_PIN, output);
+  pinMode(SPOOL_MOTOR_STEP_PIN, OUTPUT);
+  pinMode(SPOOL_MOTOR_DIR_PIN, OUTPUT);
+  pinMode(SPOOL_MOTOR_EN_PIN, OUTPUT);
 
 }
 
@@ -64,7 +64,7 @@ static double getGantryAlignmentPosition(double spoolStartPos, double spoolEndPo
 
 static void moveSpoolMotor(double rpm, boolean dir) {
   unsigned long previousMicros = micros();
-  unsigned long desiredPulseMicros = ((60*1000*1000)/rpm) //converting rpm to min/r, then converting to sec, ms, us...
+  unsigned long desiredPulseMicros = ((60*1000*1000)/rpm); //converting rpm to min/r, then converting to sec, ms, us...
   digitalWrite(SPOOL_MOTOR_EN_PIN, HIGH); //pull enable pin high to enguage the driver
 
   if(SPOOL_MOTOR_DIR_PIN) { //set dir pin
@@ -80,4 +80,5 @@ static void moveSpoolMotor(double rpm, boolean dir) {
       previousMicros = micros();
       digitalWrite(SPOOL_MOTOR_STEP_PIN, LOW);
     }
-  } 
+  }
+} 

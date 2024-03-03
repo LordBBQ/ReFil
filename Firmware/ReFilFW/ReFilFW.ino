@@ -26,11 +26,10 @@
 
 #define SERIAL_BAUDRATE 115200
 
-int dutyCycle;
+int dutyCycle = 0;
 
 void setup() {
-   thermalSafteyHasInit = false;
-  // put your setup code here, to run once:
+  thermalSafteyHasInit = false;
   Serial.begin(SERIAL_BAUDRATE);  
   initPIDController();
   initThermalSaftey();
