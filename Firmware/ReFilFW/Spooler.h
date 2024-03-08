@@ -9,6 +9,12 @@
 #define SPOOL_MOTOR_DIR_PIN 5
 #define SPOOL_MOTOR_EN_PIN 6
 
+static unsigned long currentTime;
+static unsigned long previousTime;
+static unsigned long deltaTime;
+
+static boolean stepState = false;
+
 int spoolStartingDiameter = 60;
 int spoolEndDiameter = 200;
 int spoolWidth = 60;
@@ -20,6 +26,9 @@ boolean spoolWindingDirectionInvert = false; //default to back --> front
  * Method to be executed before each new roll, and on first startup
  */
 void initSpooler() {
+  currentTime = 0;
+  previousTime = 0;
+  deltaTime = 0;
   rotationCount = 0;
   subRotationCount = 0;
 
@@ -82,3 +91,14 @@ static void moveSpoolMotor(double rpm, boolean dir) {
     }
   }
 } 
+
+static boolean moveStepperAtVelocity(double velocity) {
+  currentTime = micros();
+  deltaTime = previousTime - currentTime;
+  unsigned long stepInterval = 1000000 / velocity; // Convert to microseconds
+  if(deltaTime >= stepInterval) {
+    stepState = !stepState;
+  }
+  previousTime = micros();
+  return stepState;
+}
