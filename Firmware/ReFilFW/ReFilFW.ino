@@ -3,6 +3,8 @@
 #include "FilamentSensor.h"
 #include "EEPROMManager.h"
 #include "Spooler.h"
+#include "TrapezoidProfiler.h"
+
 
 //Heater 0 constants
 #define HEATER_0_KP 3
