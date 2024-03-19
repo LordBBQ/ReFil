@@ -87,4 +87,4 @@ class TrapezoidMotionProfiler {
     previousTime = micros();
     return currentVelocity;
   }
-
+};

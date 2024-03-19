@@ -9,6 +9,10 @@
 #define SPOOL_MOTOR_DIR_PIN 5
 #define SPOOL_MOTOR_EN_PIN 6
 
+#define GANTRY_MOTOR_STEP_PIN 7
+#define GANTRY_MOTOR_DIR_PIN 8
+#define GANTRY_MOTOR_EN_PIN 9
+
 static unsigned long currentTime;
 static unsigned long previousTime;
 static unsigned long deltaTime;
@@ -92,7 +96,7 @@ static void moveSpoolMotor(double rpm, boolean dir) {
   }
 } 
 
-static boolean moveStepperAtVelocity(double velocity) {
+static void moveGantry(double velocity) {
   currentTime = micros();
   deltaTime = previousTime - currentTime;
   unsigned long stepInterval = 1000000 / velocity; // Convert to microseconds
@@ -100,5 +104,17 @@ static boolean moveStepperAtVelocity(double velocity) {
     stepState = !stepState;
   }
   previousTime = micros();
-  return stepState;
+  digitalWrite(GANTRY_MOTOR_EN_PIN, HIGH); //enable the motor
+
+  if(velocity < 0) {
+    digitalWrite(GANTRY_MOTOR_DIR_PIN, HIGH); //invert dir if neg. velocity
+  } else {
+    digitalWrite(GANTRY_MOTOR_DIR_PIN, LOW);
+  }
+
+  if(stepState) {
+    digitalWrite(GANTRY_MOTOR_STEP_PIN, HIGH);
+  } else {
+    digitalWrite(GANTRY_MOTOR_STEP_PIN, LOW);
+  }
 }
