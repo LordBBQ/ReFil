@@ -1,566 +1,163 @@
-//#include "Utilities.h"
+#include <FastPID.h>
 
-class PIDTempController0 {
+
+//Heater 0 constants
+#define HEATER_0_PIN 9
+
+//Heater 1 constants
+#define HEATER_1_PIN 10
+#define HEATER_1_KP HEATER_0_KP
+#define HEATER_1_KI HEATER_0_KI
+#define HEATER_1_KD HEATER_0_KD
+
+//Heater 2 constants
+#define HEATER_2_PIN 22
+#define HEATER_2_KP HEATER_0_KP
+#define HEATER_2_KI HEATER_0_KI
+#define HEATER_2_KD HEATER_0_KD
+
+//Heater 3 constants
+#define HEATER_3_PIN 23
+#define HEATER_3_KP HEATER_0_KP
+#define HEATER_3_KI HEATER_0_KI
+#define HEATER_3_KD HEATER_0_KD
+
+float heater0kP = 3;
+float heater0kI = 100;
+float heater0kD = 0;
+FastPID pidController0(heater0kP, heater0kI, heater0kD, 8, false);
+
+float heater1kP = heater0kP;
+float heater1kI = heater0kI;
+float heater1kD = heater0kD;
+FastPID pidController1(heater1kP, heater1kI, heater1kD, 8, false);
+
+float heater2kP = heater0kP;
+float heater2kI = heater0kI;
+float heater2kD = heater0kD;
+FastPID pidController2(heater2kP, heater2kI, heater2kD, 8, false);
+
+float heater3kP = heater0kP;
+float heater3kI = heater0kI;
+float heater3kD = heater0kD;
+FastPID pidController3(heater3kP, heater3kI, heater3kD, 8, false);
+
+class PIDController0 {
+  private:
+
+    uint32_t lastCycle = 0;
+    int cycleDelay = 100; //ms
+    uint8_t output = 0;
+
+  /**
+   * @param float setpoint
+   * @param double feedback
+   * @return double output duty cycle
+   */
   public:
-    static unsigned long pidControllerCurrentTime;
-    static unsigned long pidControllerpidControllerpidControllerCurrentCycleTime;
-    static unsigned long pidControllerElapsedTime;
-    static unsigned long pidControllerCurrentCycleTime;
-    static unsigned long pidControllerPreviousCycleTime;
-
-    static double previousError;
-
-    static boolean debugMessages;
-    static boolean cycleComplete;
-
-    static double calculatedD;
-    static double PIDValue;
-
-    static void initPIDController() {
-      debugMessages = false;
-      cycleComplete = true;
-      pidControllerCurrentTime = millis(); //Init time variables
-      pidControllerpidControllerpidControllerCurrentCycleTime = millis();
-      previousError = 0;
-      pidControllerElapsedTime = 0;
-      pidControllerCurrentCycleTime = 0;
-      pidControllerPreviousCycleTime = 0;
-      PIDValue = 0;
-      calculatedD = 0;
-    }
-
-    /**
-    * @param double kP: The preportonal constant
-    * @param double kI: The integral constant
-    * @param double kD: The derivative constant
-    * @param double setPoint: The setpoint of the heater
-    * @param double feedback: The value of the heater's sensor
-    * @param int cycleDelay: the delay in hte cycle
-    * @return double PIDOutput: The duty cycle output of the PID controller
-    */
-    static double PIDController(double kP, double kI, double kD, double setPoint, double feedback, int cycleDelay) {
-      
-      if(cycleComplete) { //This code is a delay based on the parameter, however it does not 'stop' the code while waiting
-        double error = (setPoint - feedback);
-        double calculatedP = kP * error;
-        double calculatedI;
-
-        //Calculate Integral coefficient
-        if(-3 < error < 3) {
-          calculatedI = calculatedI + (kI * error);
-        } else {
-          if (calculatedI == NULL) { //check if calculatedI is initalised
-            calculatedI = 0;
-          }
-        }
-
-        //Calculate derivitave coefficent
-        pidControllerpidControllerpidControllerCurrentCycleTime = pidControllerCurrentTime; //Since we have not updated pidControllerCurrentTime, it is the last time the cycle was run so thus can be our previous time starting point
-        pidControllerCurrentTime = millis(); //Now we update the current time variable
-
-        pidControllerElapsedTime = (cycleDelay/1000);//((pidControllerCurrentTime-pidControllerpidControllerpidControllerCurrentCycleTime) / 1000); //Elapsed time converted from ms to s
-        //double calculatedD = 0;
-        if(pidControllerElapsedTime != 0) { //Failsafe to prevent div/0 errors if loop runs too fast.
-          calculatedD = kD * ((error - previousError) / pidControllerElapsedTime);
-        } else {
-          calculatedD = 0;
-        }
-
-        //Calculate PID value
-        PIDValue = (calculatedP + calculatedI + calculatedD);
-
-
-
-
-        if(debugMessages) {
-          Serial.print("PID Controller execution with cycle: ");
-          Serial.print(PIDValue);
-          Serial.print(", P: ");
-          Serial.print(calculatedP);
-          Serial.print(", I: ");
-          Serial.print(calculatedI);
-          Serial.print(", D: ");
-          Serial.print(calculatedD);
-          Serial.print(", previousError: ");
-          Serial.print(previousError);
-          Serial.print(", and error: ");
-          Serial.println(error);
-        }
-        previousError = error; //update previous error value
-        pidControllerCurrentCycleTime = millis();
-        pidControllerPreviousCycleTime = pidControllerCurrentCycleTime;
-      
-        cycleComplete = false; //reset so it counts time next cycle
+    double callPIDController0(float setpoint, double feedback) {
+      uint32_t before, after;
+      if((micros() - lastCycle) > cycleDelay) {
+        before = micros();
+        output = pidController0.step(setpoint, feedback);
+        after = micros();
         
+        lastCycle = micros();
+        return output;
       } else {
-        if((pidControllerCurrentCycleTime - pidControllerPreviousCycleTime) >= cycleDelay) { //This checks for if the cycleDelay has elapsed
-          cycleComplete = true;
-        } else {
-          pidControllerCurrentCycleTime = millis();
-        }
+        return output;  
       }
-
-      //Since Arduino PWM ranges between 0 and 255, we must limit it as so
-      if(PIDValue < 0) {
-        PIDValue = 0.0;
-      } else if(PIDValue > 255) {
-        PIDValue = 255.0;
-      }
-
-      return PIDValue;
       
     }
-
+  
 };
 
-class PIDTempController1 {
+class PIDController1 {
+  private:
+
+    uint32_t lastCycle = 0;
+    int cycleDelay = 100; //ms
+    uint8_t output = 0;
+
   public:
-    static unsigned long pidControllerCurrentTime;
-    static unsigned long pidControllerpidControllerpidControllerCurrentCycleTime;
-    static unsigned long pidControllerElapsedTime;
-    static unsigned long pidControllerCurrentCycleTime;
-    static unsigned long pidControllerPreviousCycleTime;
-
-    static double previousError;
-
-    static boolean debugMessages;
-    static boolean cycleComplete;
-
-    static double calculatedD;
-    static double PIDValue;
-
-    static void initPIDController() {
-      debugMessages = false;
-      cycleComplete = true;
-      pidControllerCurrentTime = millis(); //Init time variables
-      pidControllerpidControllerpidControllerCurrentCycleTime = millis();
-      previousError = 0;
-      pidControllerElapsedTime = 0;
-      pidControllerCurrentCycleTime = 0;
-      pidControllerPreviousCycleTime = 0;
-      PIDValue = 0;
-      calculatedD = 0;
-    }
-
     /**
-    * @param double kP: The preportonal constant
-    * @param double kI: The integral constant
-    * @param double kD: The derivative constant
-    * @param double setPoint: The setpoint of the heater
-    * @param double feedback: The value of the heater's sensor
-    * @param int cycleDelay: the delay in hte cycle
-    * @return double PIDOutput: The duty cycle output of the PID controller
-    */
-    static double PIDController(double kP, double kI, double kD, double setPoint, double feedback, int cycleDelay) {
-      
-      if(cycleComplete) { //This code is a delay based on the parameter, however it does not 'stop' the code while waiting
-        double error = (setPoint - feedback);
-        double calculatedP = kP * error;
-        double calculatedI;
-
-        //Calculate Integral coefficient
-        if(-3 < error < 3) {
-          calculatedI = calculatedI + (kI * error);
-        } else {
-          if (calculatedI == NULL) { //check if calculatedI is initalised
-            calculatedI = 0;
-          }
-        }
-
-        //Calculate derivitave coefficent
-        pidControllerpidControllerpidControllerCurrentCycleTime = pidControllerCurrentTime; //Since we have not updated pidControllerCurrentTime, it is the last time the cycle was run so thus can be our previous time starting point
-        pidControllerCurrentTime = millis(); //Now we update the current time variable
-
-        pidControllerElapsedTime = (cycleDelay/1000);//((pidControllerCurrentTime-pidControllerpidControllerpidControllerCurrentCycleTime) / 1000); //Elapsed time converted from ms to s
-        //double calculatedD = 0;
-        if(pidControllerElapsedTime != 0) { //Failsafe to prevent div/0 errors if loop runs too fast.
-          calculatedD = kD * ((error - previousError) / pidControllerElapsedTime);
-        } else {
-          calculatedD = 0;
-        }
-
-        //Calculate PID value
-        PIDValue = (calculatedP + calculatedI + calculatedD);
-
-
-
-
-        if(debugMessages) {
-          Serial.print("PID Controller execution with cycle: ");
-          Serial.print(PIDValue);
-          Serial.print(", P: ");
-          Serial.print(calculatedP);
-          Serial.print(", I: ");
-          Serial.print(calculatedI);
-          Serial.print(", D: ");
-          Serial.print(calculatedD);
-          Serial.print(", previousError: ");
-          Serial.print(previousError);
-          Serial.print(", and error: ");
-          Serial.println(error);
-        }
-        previousError = error; //update previous error value
-        pidControllerCurrentCycleTime = millis();
-        pidControllerPreviousCycleTime = pidControllerCurrentCycleTime;
-      
-        cycleComplete = false; //reset so it counts time next cycle
+     * @param float setpoint
+     * @param double feedback
+     * @return double output duty cycle
+     */
+    double callPIDController1(float setpoint, double feedback) {
+      uint32_t before, after;
+      if((micros() - lastCycle) > cycleDelay) {
+        before = micros();
+        output = pidController1.step(setpoint, feedback);
+        after = micros();
         
+        lastCycle = micros();
+        return output;
       } else {
-        if((pidControllerCurrentCycleTime - pidControllerPreviousCycleTime) >= cycleDelay) { //This checks for if the cycleDelay has elapsed
-          cycleComplete = true;
-        } else {
-          pidControllerCurrentCycleTime = millis();
-        }
+        return output;  
       }
-
-      //Since Arduino PWM ranges between 0 and 255, we must limit it as so
-      if(PIDValue < 0) {
-        PIDValue = 0.0;
-      } else if(PIDValue > 255) {
-        PIDValue = 255.0;
-      }
-
-      return PIDValue;
       
     }
-
+  
 };
 
-class PIDTempController2 {
+class PIDController2 {
+  private:
+
+    uint32_t lastCycle = 0;
+    int cycleDelay = 100; //ms
+    uint8_t output = 0;
+
   public:
-    static unsigned long pidControllerCurrentTime;
-    static unsigned long pidControllerpidControllerpidControllerCurrentCycleTime;
-    static unsigned long pidControllerElapsedTime;
-    static unsigned long pidControllerCurrentCycleTime;
-    static unsigned long pidControllerPreviousCycleTime;
-
-    static double previousError;
-
-    static boolean debugMessages;
-    static boolean cycleComplete;
-
-    static double calculatedD;
-    static double PIDValue;
-
-    static void initPIDController() {
-      debugMessages = false;
-      cycleComplete = true;
-      pidControllerCurrentTime = millis(); //Init time variables
-      pidControllerpidControllerpidControllerCurrentCycleTime = millis();
-      previousError = 0;
-      pidControllerElapsedTime = 0;
-      pidControllerCurrentCycleTime = 0;
-      pidControllerPreviousCycleTime = 0;
-      PIDValue = 0;
-      calculatedD = 0;
-    }
-
-    /**
-    * @param double kP: The preportonal constant
-    * @param double kI: The integral constant
-    * @param double kD: The derivative constant
-    * @param double setPoint: The setpoint of the heater
-    * @param double feedback: The value of the heater's sensor
-    * @param int cycleDelay: the delay in hte cycle
-    * @return double PIDOutput: The duty cycle output of the PID controller
-    */
-    static double PIDController(double kP, double kI, double kD, double setPoint, double feedback, int cycleDelay) {
-      
-      if(cycleComplete) { //This code is a delay based on the parameter, however it does not 'stop' the code while waiting
-        double error = (setPoint - feedback);
-        double calculatedP = kP * error;
-        double calculatedI;
-
-        //Calculate Integral coefficient
-        if(-3 < error < 3) {
-          calculatedI = calculatedI + (kI * error);
-        } else {
-          if (calculatedI == NULL) { //check if calculatedI is initalised
-            calculatedI = 0;
-          }
-        }
-
-        //Calculate derivitave coefficent
-        pidControllerpidControllerpidControllerCurrentCycleTime = pidControllerCurrentTime; //Since we have not updated pidControllerCurrentTime, it is the last time the cycle was run so thus can be our previous time starting point
-        pidControllerCurrentTime = millis(); //Now we update the current time variable
-
-        pidControllerElapsedTime = (cycleDelay/1000);//((pidControllerCurrentTime-pidControllerpidControllerpidControllerCurrentCycleTime) / 1000); //Elapsed time converted from ms to s
-        //double calculatedD = 0;
-        if(pidControllerElapsedTime != 0) { //Failsafe to prevent div/0 errors if loop runs too fast.
-          calculatedD = kD * ((error - previousError) / pidControllerElapsedTime);
-        } else {
-          calculatedD = 0;
-        }
-
-        //Calculate PID value
-        PIDValue = (calculatedP + calculatedI + calculatedD);
-
-
-
-
-        if(debugMessages) {
-          Serial.print("PID Controller execution with cycle: ");
-          Serial.print(PIDValue);
-          Serial.print(", P: ");
-          Serial.print(calculatedP);
-          Serial.print(", I: ");
-          Serial.print(calculatedI);
-          Serial.print(", D: ");
-          Serial.print(calculatedD);
-          Serial.print(", previousError: ");
-          Serial.print(previousError);
-          Serial.print(", and error: ");
-          Serial.println(error);
-        }
-        previousError = error; //update previous error value
-        pidControllerCurrentCycleTime = millis();
-        pidControllerPreviousCycleTime = pidControllerCurrentCycleTime;
-      
-        cycleComplete = false; //reset so it counts time next cycle
+  /**
+   * @param float setpoint
+   * @param double feedback
+   * @return double output duty cycle
+   */
+    double callPIDController2(float setpoint, double feedback) {
+      uint32_t before, after;
+      if((micros() - lastCycle) > cycleDelay) {
+        before = micros();
+        output = pidController2.step(setpoint, feedback);
+        after = micros();
         
+        lastCycle = micros();
+        return output;
       } else {
-        if((pidControllerCurrentCycleTime - pidControllerPreviousCycleTime) >= cycleDelay) { //This checks for if the cycleDelay has elapsed
-          cycleComplete = true;
-        } else {
-          pidControllerCurrentCycleTime = millis();
-        }
+        return output;  
       }
-
-      //Since Arduino PWM ranges between 0 and 255, we must limit it as so
-      if(PIDValue < 0) {
-        PIDValue = 0.0;
-      } else if(PIDValue > 255) {
-        PIDValue = 255.0;
-      }
-
-      return PIDValue;
       
     }
-
+  
 };
 
-class PIDTempController3 {
+class PIDController3 {
+  private:
+
+    uint32_t lastCycle = 0;
+    int cycleDelay = 100; //ms
+    uint8_t output = 0;
+
   public:
-    static unsigned long pidControllerCurrentTime;
-    static unsigned long pidControllerpidControllerpidControllerCurrentCycleTime;
-    static unsigned long pidControllerElapsedTime;
-    static unsigned long pidControllerCurrentCycleTime;
-    static unsigned long pidControllerPreviousCycleTime;
-
-    static double previousError;
-
-    static boolean debugMessages;
-    static boolean cycleComplete;
-
-    static double calculatedD;
-    static double PIDValue;
-
-    static void initPIDController() {
-      debugMessages = false;
-      cycleComplete = true;
-      pidControllerCurrentTime = millis(); //Init time variables
-      pidControllerpidControllerpidControllerCurrentCycleTime = millis();
-      previousError = 0;
-      pidControllerElapsedTime = 0;
-      pidControllerCurrentCycleTime = 0;
-      pidControllerPreviousCycleTime = 0;
-      PIDValue = 0;
-      calculatedD = 0;
-    }
-
     /**
-    * @param double kP: The preportonal constant
-    * @param double kI: The integral constant
-    * @param double kD: The derivative constant
-    * @param double setPoint: The setpoint of the heater
-    * @param double feedback: The value of the heater's sensor
-    * @param int cycleDelay: the delay in hte cycle
-    * @return double PIDOutput: The duty cycle output of the PID controller
-    */
-    static double PIDController(double kP, double kI, double kD, double setPoint, double feedback, int cycleDelay) {
-      
-      if(cycleComplete) { //This code is a delay based on the parameter, however it does not 'stop' the code while waiting
-        double error = (setPoint - feedback);
-        double calculatedP = kP * error;
-        double calculatedI;
-
-        //Calculate Integral coefficient
-        if(-3 < error < 3) {
-          calculatedI = calculatedI + (kI * error);
-        } else {
-          if (calculatedI == NULL) { //check if calculatedI is initalised
-            calculatedI = 0;
-          }
-        }
-
-        //Calculate derivitave coefficent
-        pidControllerpidControllerpidControllerCurrentCycleTime = pidControllerCurrentTime; //Since we have not updated pidControllerCurrentTime, it is the last time the cycle was run so thus can be our previous time starting point
-        pidControllerCurrentTime = millis(); //Now we update the current time variable
-
-        pidControllerElapsedTime = (cycleDelay/1000);//((pidControllerCurrentTime-pidControllerpidControllerpidControllerCurrentCycleTime) / 1000); //Elapsed time converted from ms to s
-        //double calculatedD = 0;
-        if(pidControllerElapsedTime != 0) { //Failsafe to prevent div/0 errors if loop runs too fast.
-          calculatedD = kD * ((error - previousError) / pidControllerElapsedTime);
-        } else {
-          calculatedD = 0;
-        }
-
-        //Calculate PID value
-        PIDValue = (calculatedP + calculatedI + calculatedD);
-
-
-
-
-        if(debugMessages) {
-          Serial.print("PID Controller execution with cycle: ");
-          Serial.print(PIDValue);
-          Serial.print(", P: ");
-          Serial.print(calculatedP);
-          Serial.print(", I: ");
-          Serial.print(calculatedI);
-          Serial.print(", D: ");
-          Serial.print(calculatedD);
-          Serial.print(", previousError: ");
-          Serial.print(previousError);
-          Serial.print(", and error: ");
-          Serial.println(error);
-        }
-        previousError = error; //update previous error value
-        pidControllerCurrentCycleTime = millis();
-        pidControllerPreviousCycleTime = pidControllerCurrentCycleTime;
-      
-        cycleComplete = false; //reset so it counts time next cycle
+     * @param float setpoint
+     * @param double feedback
+     * @return double output duty cycle
+     */
+    double callPIDController3(float setpoint, double feedback) {
+      uint32_t before, after;
+      if((micros() - lastCycle) > cycleDelay) {
+        before = micros();
+        output = pidController3.step(setpoint, feedback);
+        after = micros();
         
+        lastCycle = micros();
+        return output;
       } else {
-        if((pidControllerCurrentCycleTime - pidControllerPreviousCycleTime) >= cycleDelay) { //This checks for if the cycleDelay has elapsed
-          cycleComplete = true;
-        } else {
-          pidControllerCurrentCycleTime = millis();
-        }
+        return output;  
       }
-
-      //Since Arduino PWM ranges between 0 and 255, we must limit it as so
-      if(PIDValue < 0) {
-        PIDValue = 0.0;
-      } else if(PIDValue > 255) {
-        PIDValue = 255.0;
-      }
-
-      return PIDValue;
       
     }
-
-};
-
-class PIDDiameterController {
-  public:
-    static unsigned long pidControllerCurrentTime;
-    static unsigned long pidControllerpidControllerpidControllerCurrentCycleTime;
-    static unsigned long pidControllerElapsedTime;
-    static unsigned long pidControllerCurrentCycleTime;
-    static unsigned long pidControllerPreviousCycleTime;
-
-    static double previousError;
-
-    static boolean debugMessages;
-    static boolean cycleComplete;
-
-    static double calculatedD;
-    static double PIDValue;
-
-    static void initPIDController() {
-      debugMessages = false;
-      cycleComplete = true;
-      pidControllerCurrentTime = millis(); //Init time variables
-      pidControllerpidControllerpidControllerCurrentCycleTime = millis();
-      previousError = 0;
-      pidControllerElapsedTime = 0;
-      pidControllerCurrentCycleTime = 0;
-      pidControllerPreviousCycleTime = 0;
-      PIDValue = 0;
-      calculatedD = 0;
-    }
-
-    /**
-    * @param double kP: The preportonal constant
-    * @param double kI: The integral constant
-    * @param double kD: The derivative constant
-    * @param double setPoint: The setpoint of the heater
-    * @param double feedback: The value of the heater's sensor
-    * @param int cycleDelay: the delay in hte cycle
-    * @return double PIDOutput: The duty cycle output of the PID controller
-    */
-    static double PIDController(double kP, double kI, double kD, double setPoint, double feedback, int cycleDelay) {
-      
-      if(cycleComplete) { //This code is a delay based on the parameter, however it does not 'stop' the code while waiting
-        double error = (setPoint - feedback);
-        double calculatedP = kP * error;
-        double calculatedI;
-
-        //Calculate Integral coefficient
-        if(-3 < error < 3) {
-          calculatedI = calculatedI + (kI * error);
-        } else {
-          if (calculatedI == NULL) { //check if calculatedI is initalised
-            calculatedI = 0;
-          }
-        }
-
-        //Calculate derivitave coefficent
-        pidControllerpidControllerpidControllerCurrentCycleTime = pidControllerCurrentTime; //Since we have not updated pidControllerCurrentTime, it is the last time the cycle was run so thus can be our previous time starting point
-        pidControllerCurrentTime = millis(); //Now we update the current time variable
-
-        pidControllerElapsedTime = (cycleDelay/1000);//((pidControllerCurrentTime-pidControllerpidControllerpidControllerCurrentCycleTime) / 1000); //Elapsed time converted from ms to s
-        //double calculatedD = 0;
-        if(pidControllerElapsedTime != 0) { //Failsafe to prevent div/0 errors if loop runs too fast.
-          calculatedD = kD * ((error - previousError) / pidControllerElapsedTime);
-        } else {
-          calculatedD = 0;
-        }
-
-        //Calculate PID value
-        PIDValue = (calculatedP + calculatedI + calculatedD);
-
-
-
-
-        if(debugMessages) {
-          Serial.print("PID Controller execution with cycle: ");
-          Serial.print(PIDValue);
-          Serial.print(", P: ");
-          Serial.print(calculatedP);
-          Serial.print(", I: ");
-          Serial.print(calculatedI);
-          Serial.print(", D: ");
-          Serial.print(calculatedD);
-          Serial.print(", previousError: ");
-          Serial.print(previousError);
-          Serial.print(", and error: ");
-          Serial.println(error);
-        }
-        previousError = error; //update previous error value
-        pidControllerCurrentCycleTime = millis();
-        pidControllerPreviousCycleTime = pidControllerCurrentCycleTime;
-      
-        cycleComplete = false; //reset so it counts time next cycle
-        
-      } else {
-        if((pidControllerCurrentCycleTime - pidControllerPreviousCycleTime) >= cycleDelay) { //This checks for if the cycleDelay has elapsed
-          cycleComplete = true;
-        } else {
-          pidControllerCurrentCycleTime = millis();
-        }
-      }
-
-      //Since Arduino PWM ranges between 0 and 255, we must limit it as so
-      if(PIDValue < -255) {
-        PIDValue = 0.0;
-      } else if(PIDValue > 255) {
-        PIDValue = 255.0;
-      }
-
-      return PIDValue;
-      
-    }
-
+  
 };

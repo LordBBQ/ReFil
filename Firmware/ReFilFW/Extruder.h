@@ -1,37 +1,14 @@
 #include "Thermistors.h"
 #include "PIDController.h"
 
-#define DRIVE_MOTOR_VP_PIN 10
+#define DRIVE_MOTOR_VP_PIN 8
 #define DRIVE_MOTOR_RPM 45 //rpm
 
-//Heater 0 constants
-#define HEATER_0_PIN 20
-#define HEATER_0_KP 3
-#define HEATER_0_KI 100
-#define HEATER_0_KD 0.0
-
-//Heater 1 constants
-#define HEATER_1_PIN 21
-#define HEATER_1_KP HEATER_0_KP
-#define HEATER_1_KI HEATER_0_KI
-#define HEATER_1_KD HEATER_0_KD
-
-//Heater 2 constants
-#define HEATER_2_PIN 22
-#define HEATER_2_KP HEATER_0_KP
-#define HEATER_2_KI HEATER_0_KI
-#define HEATER_2_KD HEATER_0_KD
-
-//Heater 3 constants
-#define HEATER_3_PIN 23
-#define HEATER_3_KP HEATER_0_KP
-#define HEATER_3_KI HEATER_0_KI
-#define HEATER_3_KD HEATER_0_KD
 
 #define SCREW_PITCH 50 //mm
 #define SCREW_CROSSSECTIONAL_AREA 380.1327111
 
-#define FAN_PIN 25
+#define FAN_PIN 60
 
 
 void spinDriveMotor(double rpm) {
@@ -40,16 +17,17 @@ void spinDriveMotor(double rpm) {
 }
 
 bool setHeater(int zone, float setTemp) {
+  PIDController0 m_pid0;
+  PIDController1 m_pid1;
+  PIDController2 m_pid2;
+  PIDController3 m_pid3;
+  
   switch(zone) {
     case 0:
       analogWrite(
-        HEATER_0_PIN, PIDTempController0::PIDController(
-          HEATER_0_KP, 
-          HEATER_0_KI, 
-          HEATER_0_KD, 
+        HEATER_0_PIN, m_pid0.callPIDController0(
           setTemp, 
-          getThermistorValue(0), 
-          50
+          getThermistorValue(0)
         )
       );
     if(getThermistorValue(0) >= setTemp) {
@@ -58,13 +36,9 @@ bool setHeater(int zone, float setTemp) {
     break;
     case 1:
       analogWrite(
-        HEATER_1_PIN, PIDTempController1::PIDController(
-          HEATER_1_KP, 
-          HEATER_1_KI, 
-          HEATER_1_KD, 
+        HEATER_1_PIN, m_pid1.callPIDController1(
           setTemp, 
-          getThermistorValue(1), 
-          50
+          getThermistorValue(1)
         )
       );
     if(getThermistorValue(1) >= setTemp) {
@@ -73,13 +47,9 @@ bool setHeater(int zone, float setTemp) {
     break;
     case 2:
       analogWrite(
-        HEATER_2_PIN, PIDTempController2::PIDController(
-          HEATER_2_KP, 
-          HEATER_2_KI, 
-          HEATER_2_KD, 
+        HEATER_2_PIN, m_pid2.callPIDController2(
           setTemp, 
-          getThermistorValue(2), 
-          50
+          getThermistorValue(2)
         )
       );
     if(getThermistorValue(2) >= setTemp) {
@@ -88,13 +58,9 @@ bool setHeater(int zone, float setTemp) {
     break;
     case 3:
       analogWrite(
-        HEATER_3_PIN, PIDTempController3::PIDController(
-          HEATER_3_KP, 
-          HEATER_3_KI, 
-          HEATER_3_KD, 
+        HEATER_3_PIN, m_pid3.callPIDController3(
           setTemp, 
-          getThermistorValue(3), 
-          50
+          getThermistorValue(3)
         )
       );
     if(getThermistorValue(3) >= setTemp) {
@@ -103,6 +69,13 @@ bool setHeater(int zone, float setTemp) {
     break;
   }
   return false;
+}
+
+void killHeaters() {
+  analogWrite(HEATER_0_PIN, 0);
+  analogWrite(HEATER_1_PIN, 0);
+  analogWrite(HEATER_2_PIN, 0);
+  analogWrite(HEATER_3_PIN, 0);
 }
 
 void setFans(float dutyCycle) {

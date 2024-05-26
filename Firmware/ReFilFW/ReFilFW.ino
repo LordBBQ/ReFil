@@ -8,14 +8,16 @@
 
 #define SERIAL_BAUDRATE 115200
 
-int dutyCycle = 0;
+int heater0DutyCycle = 0;
+int heater1DutyCycle = 0;
 
 void setup() {
   thermalSafteyHasInit = false;
   Serial.begin(SERIAL_BAUDRATE);  
   //initPIDController();
   initThermalSaftey();
-  dutyCycle = 0;
+  heater0DutyCycle = 0;
+  heater1DutyCycle = 0;
 }
 
 void loop() {
@@ -28,30 +30,31 @@ void loop() {
 //  Serial.print(R2);
 //  Serial.println(" Ohms");
 //  delay(1000);
-  //dutyCycle = PIDController(HEATER_0_KP, HEATER_0_KI, HEATER_0_KD, target, getThermistorValue(0), 50);
+
 
   Serial.print("Thermistor:");
   Serial.print(getThermistorValue(0));
   Serial.print(",");
   Serial.print("Output:");
-  Serial.print(dutyCycle);
+  Serial.print(heater0DutyCycle);
   Serial.print(",");
   Serial.print("Target:");
   Serial.println(target);
   //analogWrite(13, 255);
   Serial.print("saftey thresh:");
   Serial.println(heaterFaultLevel[0]);
-  if(checkThermalSaftey(dutyCycle, getThermistorValue(0), 0) == true) {
+  if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true) || (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
     //Serial.print("TRIP");
   } else {
 
   }
 
-  if(checkThermalSaftey(dutyCycle, getThermistorValue(0), 0) == true) {
-    analogWrite(13, 0);
-    Serial.print("TRIP!!!");
+  if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true) || (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
+    killHeaters();
+
   } else {
-    analogWrite(13, dutyCycle);
+    setHeater(0, target);
+    setHeater(1, target);   
   }
   
 }

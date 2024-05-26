@@ -35,7 +35,7 @@ void initSpooler() {
 
 void calculatePullerSpeed(double currentDiameter, double targetDiameter) {
 
-  return ((255 / PIDDiameterController::PIDController(PULLER_KP, PULLER_KI, PULLER_KD, currentDiameter, targetDiameter, 50)) + PULLER_DEFAULT_SPEED);
+  return 0;//return ((255 / PIDDiameterController::PIDController(PULLER_KP, PULLER_KI, PULLER_KD, currentDiameter, targetDiameter, 50)) + PULLER_DEFAULT_SPEED);
 }
 
 static void movePullerMotor(double rpm) {
@@ -58,4 +58,3 @@ static void movePullerMotor(double rpm) {
     }
   }
 } 
-

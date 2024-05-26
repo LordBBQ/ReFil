@@ -76,7 +76,7 @@ boolean extrude(float zone0, float zone1, float zone2, float zone3, float target
     setHeater(3, zone3);
 
     spinDriveMotor(convertVolumeToRPM(flowRate));
-    movePullerMotor(calculatePullerSpeed(targetDiameter, getFilamentSensor()));
+    //movePullerMotor(calculatePullerSpeed(targetDiameter, getFilamentSensor()));
   }
 return false;
 
