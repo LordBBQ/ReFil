@@ -11,7 +11,7 @@
 #define HEATER_1_KD HEATER_0_KD
 
 //Heater 2 constants
-#define HEATER_2_PIN 22
+#define HEATER_2_PIN 60
 #define HEATER_2_KP HEATER_0_KP
 #define HEATER_2_KI HEATER_0_KI
 #define HEATER_2_KD HEATER_0_KD
@@ -22,25 +22,27 @@
 #define HEATER_3_KI HEATER_0_KI
 #define HEATER_3_KD HEATER_0_KD
 
+float cycleHz = 10;
+
 float heater0kP = 3;
 float heater0kI = 100;
 float heater0kD = 0;
-FastPID pidController0(heater0kP, heater0kI, heater0kD, 8, false);
+FastPID pidController0(heater0kP, heater0kI, heater0kD, cycleHz, 8, false);
 
 float heater1kP = heater0kP;
 float heater1kI = heater0kI;
 float heater1kD = heater0kD;
-FastPID pidController1(heater1kP, heater1kI, heater1kD, 8, false);
+FastPID pidController1(heater1kP, heater1kI, heater1kD, cycleHz, 8, false);
 
 float heater2kP = heater0kP;
 float heater2kI = heater0kI;
 float heater2kD = heater0kD;
-FastPID pidController2(heater2kP, heater2kI, heater2kD, 8, false);
+FastPID pidController2(heater2kP, heater2kI, heater2kD, cycleHz, 8, false);
 
 float heater3kP = heater0kP;
 float heater3kI = heater0kI;
 float heater3kD = heater0kD;
-FastPID pidController3(heater3kP, heater3kI, heater3kD, 8, false);
+FastPID pidController3(heater3kP, heater3kI, heater3kD, cycleHz, 8, false);
 
 class PIDController0 {
   private:
@@ -60,6 +62,7 @@ class PIDController0 {
       if((micros() - lastCycle) > cycleDelay) {
         before = micros();
         output = pidController0.step(setpoint, feedback);
+        Serial.println("CMD: " + output);
         after = micros();
         
         lastCycle = micros();
@@ -93,6 +96,7 @@ class PIDController1 {
         after = micros();
         
         lastCycle = micros();
+        Serial.println("PID1");
         return output;
       } else {
         return output;  

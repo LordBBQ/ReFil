@@ -9,7 +9,7 @@ bool zone3AtTemp = false;
 
 bool extruderReadyFlag = false;
 
-void initExtruder() {
+void initHeaters() {
   zone0AtTemp = false;
   zone1AtTemp = false;
   zone2AtTemp = false;
