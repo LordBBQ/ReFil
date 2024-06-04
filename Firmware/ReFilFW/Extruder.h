@@ -31,17 +31,14 @@ void spinDriveMotor(double rpm) {
 }
 
 bool setHeater(int zone, float setTemp) {
-  PIDController0 m_pid0;
-  PIDController1 m_pid1;
-  PIDController2 m_pid2;
-  PIDController3 m_pid3;
+  // PIDController0 m_pid0;
+  // PIDController1 m_pid1;
+  // PIDController2 m_pid2;
+  // PIDController3 m_pid3;
   
   switch(zone) {
     case 0:
-      double heater0Output = m_pid0.callPIDController0(
-          setTemp, 
-          getThermistorValue(0)
-      );
+      double heater0Output = PIDController(HEATER_0_KP, HEATER_0_KI, HEATER_0_KD, setTemp, getThermistorValue(0), 50);
       
       if(checkThermalSaftey(heater0Output, getThermistorValue(0), 0)) {
         Serial.println("TRIP0");
@@ -58,64 +55,64 @@ bool setHeater(int zone, float setTemp) {
         return true;
       }
     break;
-    case 1:
-      double heater1Output = m_pid1.callPIDController1(
-          setTemp, 
-          getThermistorValue(1)
-      );
+    // case 1:
+    //   double heater1Output = m_pid1.callPIDController1(
+    //       setTemp, 
+    //       getThermistorValue(1)
+    //   );
       
-      if(checkThermalSaftey(heater1Output, getThermistorValue(1), 1)) {
-        Serial.println("TRIP1");
-        killHeaters();
-      } else {
-        //Continue with heater heating
-        analogWrite(HEATER_1_PIN, heater1Output);
-        Serial.print("H1: ");
-        Serial.println(heater1Output);
-      }
-      //Have we hit temp?
-      if(getThermistorValue(1) >= setTemp) {
-        return true;
-      }
-    break;
-    case 2:
-      double heater2Output = m_pid2.callPIDController2(
-          setTemp, 
-          getThermistorValue(2)
-      );
+    //   if(checkThermalSaftey(heater1Output, getThermistorValue(1), 1)) {
+    //     Serial.println("TRIP1");
+    //     killHeaters();
+    //   } else {
+    //     //Continue with heater heating
+    //     analogWrite(HEATER_1_PIN, heater1Output);
+    //     Serial.print("H1: ");
+    //     Serial.println(heater1Output);
+    //   }
+    //   //Have we hit temp?
+    //   if(getThermistorValue(1) >= setTemp) {
+    //     return true;
+    //   }
+    // break;
+    // case 2:
+    //   double heater2Output = m_pid2.callPIDController2(
+    //       setTemp, 
+    //       getThermistorValue(2)
+    //   );
       
-      if(checkThermalSaftey(heater0Output, getThermistorValue(2), 2)) {
-        Serial.println("TRIP2");
-        killHeaters();
-      } else {
-        //Continue with heater heating
-        analogWrite(HEATER_2_PIN, heater2Output);
-        Serial.print("H2: ");
-        Serial.println(heater2Output);
-      }
-      //Have we hit temp?
-      if(getThermistorValue(2) >= setTemp) {
-        return true;
-      }
-    break;
-    case 3:
-      double heater3Output = m_pid3.callPIDController3(
-          setTemp, 
-          getThermistorValue(0)
-      );
+    //   if(checkThermalSaftey(heater0Output, getThermistorValue(2), 2)) {
+    //     Serial.println("TRIP2");
+    //     killHeaters();
+    //   } else {
+    //     //Continue with heater heating
+    //     analogWrite(HEATER_2_PIN, heater2Output);
+    //     Serial.print("H2: ");
+    //     Serial.println(heater2Output);
+    //   }
+    //   //Have we hit temp?
+    //   if(getThermistorValue(2) >= setTemp) {
+    //     return true;
+    //   }
+    // break;
+    // case 3:
+    //   double heater3Output = m_pid3.callPIDController3(
+    //       setTemp, 
+    //       getThermistorValue(0)
+    //   );
       
-      if(checkThermalSaftey(heater3Output, getThermistorValue(3), 3)) {
-        Serial.println("TRIP3");
-        killHeaters();
-      } else {
-        //Continue with heater heating
-        analogWrite(HEATER_3_PIN, heater3Output);
-      }
-      //Have we hit temp?
-      if(getThermistorValue(3) >= setTemp) {
-        return true;
-      }
-    break;
+    //   if(checkThermalSaftey(heater3Output, getThermistorValue(3), 3)) {
+    //     Serial.println("TRIP3");
+    //     killHeaters();
+    //   } else {
+    //     //Continue with heater heating
+    //     analogWrite(HEATER_3_PIN, heater3Output);
+    //   }
+    //   //Have we hit temp?
+    //   if(getThermistorValue(3) >= setTemp) {
+    //     return true;
+    //   }
+    // break;
   }
   return false;
 }
