@@ -27,7 +27,7 @@ void killHeaters() {
 
 void spinDriveMotor(double rpm) {
   float driveOutput = rpm / DRIVE_MOTOR_RPM; //calculate reqd duty cycle of motor based off max rpm
-  analogWrite(DRIVE_MOTOR_VP_PIN, driveOutput);
+  analogWrite(DRIVE_MOTOR_VP_PIN, driveOutput * 1023);
 }
 
 bool setHeater(int zone, float setTemp) {
@@ -38,7 +38,7 @@ bool setHeater(int zone, float setTemp) {
   
   switch(zone) {
     case 0:
-      double heater0Output = PIDController(HEATER_0_KP, HEATER_0_KI, HEATER_0_KD, setTemp, getThermistorValue(0), 50);
+      double heater0Output = PIDController0(HEATER_0_KP, HEATER_0_KI, HEATER_0_KD, setTemp, getThermistorValue(0), 50);
       
       if(checkThermalSaftey(heater0Output, getThermistorValue(0), 0)) {
         Serial.println("TRIP0");
@@ -55,26 +55,24 @@ bool setHeater(int zone, float setTemp) {
         return true;
       }
     break;
-    // case 1:
-    //   double heater1Output = m_pid1.callPIDController1(
-    //       setTemp, 
-    //       getThermistorValue(1)
-    //   );
+    case 1:
+      double heater1Output = PIDController1(HEATER_1_KP, HEATER_1_KI, HEATER_1_KD, setTemp, getThermistorValue(0), 50);
+
       
-    //   if(checkThermalSaftey(heater1Output, getThermistorValue(1), 1)) {
-    //     Serial.println("TRIP1");
-    //     killHeaters();
-    //   } else {
-    //     //Continue with heater heating
-    //     analogWrite(HEATER_1_PIN, heater1Output);
-    //     Serial.print("H1: ");
-    //     Serial.println(heater1Output);
-    //   }
-    //   //Have we hit temp?
-    //   if(getThermistorValue(1) >= setTemp) {
-    //     return true;
-    //   }
-    // break;
+      if(checkThermalSaftey(heater1Output, getThermistorValue(0), 1)) {
+        Serial.println("TRIP1");
+        killHeaters();
+      } else {
+        //Continue with heater heating
+        analogWrite(HEATER_1_PIN, heater1Output);
+        Serial.print("H1: ");
+        Serial.println(heater1Output);
+      }
+      //Have we hit temp?
+      if(getThermistorValue(1) >= setTemp) {
+        return true;
+      }
+    break;
     // case 2:
     //   double heater2Output = m_pid2.callPIDController2(
     //       setTemp, 

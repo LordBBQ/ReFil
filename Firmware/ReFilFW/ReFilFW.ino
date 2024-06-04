@@ -22,6 +22,7 @@ void setup() {
 }
 
 void loop() {
+  spinDriveMotor(45);
   double target = 240;
   // put your main code here, to run repeatedly:
 //  double thermistorVoltage = ((analogRead(A7) / 1024.0) * 5.0);
@@ -60,7 +61,7 @@ void loop() {
     Serial.print(getThermistorValue(0));
      Serial.print("T1: ");
     Serial.println(getThermistorValue(1));   
-    setHeater(1, target);   
+    //setHeater(1, target);   
     setHeater(0, target);
   
   
