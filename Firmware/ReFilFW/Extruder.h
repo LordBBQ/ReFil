@@ -8,7 +8,7 @@
 #define SCREW_PITCH 50 //mm
 #define SCREW_CROSSSECTIONAL_AREA 380.1327111
 
-#define FAN_PIN 60
+#define FAN_PIN 52
 
 void initExtruder() {
   pinMode(HEATER_0_PIN, OUTPUT);
@@ -27,7 +27,8 @@ void killHeaters() {
 
 void spinDriveMotor(double rpm) {
   float driveOutput = rpm / DRIVE_MOTOR_RPM; //calculate reqd duty cycle of motor based off max rpm
-  analogWrite(DRIVE_MOTOR_VP_PIN, driveOutput * 1023);
+  //analogWrite(DRIVE_MOTOR_VP_PIN, driveOutput * 1023);
+  analogWrite(DRIVE_MOTOR_VP_PIN, 80);
 }
 
 bool setHeater(int zone, float setTemp) {
@@ -117,8 +118,12 @@ bool setHeater(int zone, float setTemp) {
 
 
 
-void setFans(float dutyCycle) {
-  analogWrite(FAN_PIN, dutyCycle);
+void setFans(bool status) {
+  if(status) {
+    digitalWrite(FAN_PIN, HIGH);
+  } else {
+    digitalWrite(FAN_PIN, LOW);
+  }
 }
 
 double convertVolumeToRPM(double volume) {

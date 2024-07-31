@@ -1,3 +1,4 @@
+#include "Arduino.h"
 #define SPOOL_MOTOR_STEPS_PER_ROT 200
 #define GANTRY_MOTOR_STEPS_PER_ROT 200
 
@@ -5,9 +6,9 @@
 
 #define TARGET_FILAMENT_DIAMETER 1.75
 
-#define SPOOL_MOTOR_STEP_PIN 4
-#define SPOOL_MOTOR_DIR_PIN 5
-#define SPOOL_MOTOR_EN_PIN 6
+#define SPOOL_MOTOR_STEP_PIN 36
+#define SPOOL_MOTOR_DIR_PIN 34
+#define SPOOL_MOTOR_EN_PIN 30
 
 #define GANTRY_MOTOR_STEP_PIN 7
 #define GANTRY_MOTOR_DIR_PIN 8
@@ -30,6 +31,11 @@ boolean spoolWindingDirectionInvert = false; //default to back --> front
  * Method to be executed before each new roll, and on first startup
  */
 void initSpooler() {
+  pinMode(SPOOL_MOTOR_STEP_PIN, OUTPUT);
+  pinMode(SPOOL_MOTOR_DIR_PIN, OUTPUT);
+  pinMode(SPOOL_MOTOR_EN_PIN, OUTPUT);
+
+
   currentTime = 0;
   previousTime = 0;
   deltaTime = 0;
@@ -75,12 +81,12 @@ static double getGantryAlignmentPosition(double spoolStartPos, double spoolEndPo
   }
 }
 
-static void moveSpoolMotor(double rpm, boolean dir) {
+static void moveSpoolMotor(double rpm, bool dir) {
   unsigned long previousMicros = micros();
   unsigned long desiredPulseMicros = ((60*1000*1000)/rpm); //converting rpm to min/r, then converting to sec, ms, us...
   digitalWrite(SPOOL_MOTOR_EN_PIN, HIGH); //pull enable pin high to enguage the driver
 
-  if(SPOOL_MOTOR_DIR_PIN) { //set dir pin
+  if(dir) { //set dir pin
     digitalWrite(SPOOL_MOTOR_DIR_PIN, HIGH);
   } else {
     digitalWrite(SPOOL_MOTOR_DIR_PIN, LOW);

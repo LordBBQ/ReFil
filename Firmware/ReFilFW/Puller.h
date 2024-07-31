@@ -21,7 +21,7 @@ static boolean pullerStepState = false;
 /**
  * Method to be executed before each new roll, and on first startup
  */
-void initSpooler() {
+void initPuller() {
   pullerCurrentTime = 0;
   pullerPreviousTime = 0;
   pullerDeltaTime = 0;

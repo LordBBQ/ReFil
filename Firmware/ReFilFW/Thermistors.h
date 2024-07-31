@@ -5,7 +5,7 @@
 #define THERMISTOR_3_PIN A7 //TODO
 
 #define HEATER_MINTEMP 10 //degrees c
-#define HEATER_MAXTEMP 260 //degrees c
+#define HEATER_MAXTEMP 280 //degrees c
 
 #define THERMAL_SAFTEY_FAULT_LEVEL_THRESH 200 //how many fault points before a failure is presumed
 #define THERMAL_SAFTEY_FAULT_LEVEL_DEGREDATION 3 //how many fault points are lost per cycle
