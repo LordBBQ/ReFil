@@ -30,6 +30,8 @@ bool gantryDir = false;
 int spoolStartingDiameter = 60;
 int spoolEndDiameter = 200;
 int spoolWidth = 60;
+
+unsigned long currentSpoolMicros = micros();
 unsigned long previousSpoolMicros = micros();
 
 
@@ -38,8 +40,11 @@ bool spoolStepState = false;
 bool gantryHomed = false;
 bool gantryHomePreTrig = false;
 
-float rotationCount = 0;
-float subRotationCount = 0;
+double rotationCount = 0;
+double subRotationCount = 0;
+
+long spoolCurrentPosition = 0;
+
 
 unsigned long gantryHomePreviousTime = 0;
 int gantryHomeBounceTime = 1500;
@@ -69,6 +74,9 @@ void initSpooler() {
   deltaTime = 0;
   rotationCount = 0;
   subRotationCount = 0;
+
+  currentSpoolMicros = micros();
+  previousSpoolMicros = micros();
 }
 
 bool getGantryEndstop() {
@@ -82,21 +90,52 @@ bool getGantryEndstop() {
 /**
  * Calculates the desired rotation based on how much filament has been spooled.
  */
-static double getSpoolRotationDistance(double desiredPullSpeed, double spoolStartDiameter, double spoolStartPos, double spoolEndPos) {
-  int spoolEffectiveWindingsPerLayer = (spoolEndPos - spoolStartPos) / TARGET_FILAMENT_DIAMETER;
+static long getSpoolRotationDistance(double desiredPullSpeed, double spoolStartDiameter, double spoolStartPos, double spoolEndPos) {
+  int spoolEffectiveWindingsPerLayer = 20;//int((spoolEndPos - spoolStartPos) / TARGET_FILAMENT_DIAMETER);
   //calculate the effective diameter of the spool based on num of layers, remembering to add 1/2 of the diameter for the center of the filament strand.
   double spoolEffectiveDiameter = spoolStartDiameter + (rotationCount / spoolEffectiveWindingsPerLayer * TARGET_FILAMENT_DIAMETER + TARGET_FILAMENT_DIAMETER/2);
   //calculate the effective circumference of one layer of the spool based on effective diameter
   double spoolEffectiveCircumference = spoolEffectiveDiameter * PI;
-  double requiredRotationDistance = spoolEffectiveCircumference / desiredPullSpeed; //caclulate requried rotation
+  unsigned long timeSinceLastUpdate = currentSpoolMicros - previousSpoolMicros;
+
+  double requiredRotationDistance = desiredPullSpeed * (timeSinceLastUpdate/1000/1000) ; //caclulate requried extrusion ammount
+  double requiredRotationSteps = requiredRotationDistance/spoolEffectiveCircumference * 200 * 16 * 8;
+
+  // Serial.print("Windings per layer ");
+  // Serial.println(spoolEffectiveWindingsPerLayer);
+  // Serial.print("Effective diameter ");
+  // Serial.println(spoolEffectiveDiameter);
+
+  // Serial.print("Effective circumference ");
+  // Serial.println(spoolEffectiveCircumference);
+
+  // Serial.print("Rot distance ");
+  // Serial.println(requiredRotationDistance);
+
+  Serial.print("Rot steps ");
+  Serial.println(requiredRotationSteps);
+
+
+
   if(subRotationCount >= spoolEffectiveWindingsPerLayer) {
     rotationCount += 1;
     spoolWindingDirectionInvert = !spoolWindingDirectionInvert;
-    subRotationCount =  subRotationCount + requiredRotationDistance - spoolEffectiveWindingsPerLayer;
+    subRotationCount =  0;//subRotationCount + requiredRotationDistance/spoolEffectiveCircumference - spoolEffectiveWindingsPerLayer;
   } else {
-    subRotationCount += requiredRotationDistance;
+    subRotationCount += requiredRotationDistance/spoolEffectiveCircumference;
   }
+  Serial.print("spool pos ");
+  Serial.println(spoolCurrentPosition);
+  currentSpoolMicros = micros();
+  previousSpoolMicros = currentSpoolMicros;
+
+  //return (spoolCurrentPosition += requiredRotationSteps);
   return requiredRotationDistance;
+}
+
+void calculatePullerSpeed(double currentDiameter, double targetDiameter) {
+
+  return 0;
 }
 
 /**
@@ -104,11 +143,15 @@ static double getSpoolRotationDistance(double desiredPullSpeed, double spoolStar
  * NOTE: Requies getSpoolRotationDistance() to be executed first to update values!!!!!!!
  */
 static double getGantryAlignmentPosition(double spoolStartPos, double spoolEndPos) {
-  int spoolEffectiveWindingsPerLayer = (spoolEndPos - spoolStartPos) / TARGET_FILAMENT_DIAMETER;
+  int spoolEffectiveWindingsPerLayer = 20;//int((spoolEndPos - spoolStartPos) / 1.75);//TARGET_FILAMENT_DIAMETER;
+  int spoolWidth = spoolEndPos - spoolStartPos;
+  double stepsPerFilWinding = spoolWidth/spoolEffectiveWindingsPerLayer;
+  double requiredMovementDistance = stepsPerFilWinding * subRotationCount;
+
   if(spoolWindingDirectionInvert) {
-    return spoolStartPos + ((spoolEndPos - spoolStartPos)/spoolEffectiveWindingsPerLayer * subRotationCount);
+    return spoolStartPos + requiredMovementDistance;
   } else {
-    return spoolEndPos - ((spoolEndPos - spoolStartPos)/spoolEffectiveWindingsPerLayer * subRotationCount);
+    return spoolEndPos - requiredMovementDistance;
   }
 }
 
@@ -122,6 +165,11 @@ static void moveSpoolMotor(double rpm, bool dir) {
   }
   
 } 
+
+static void moveSpoolToPosition(double velocity, int position) {
+  spoolStepper.setSpeed(velocity*10);
+  spoolStepper.move(position);
+}
 
 static void spinGantryMotor(double velocity) {
   digitalWrite(GANTRY_MOTOR_EN_PIN, LOW);
@@ -213,4 +261,10 @@ void moveGantry(double velocity, byte mode) {
     break;
   }
   
+}
+
+void moveGantryToPosition(double velocity, int position) {
+  gantryStepper.setSpeed(velocity*1);
+  gantryStepper.moveTo(-position);
+
 }

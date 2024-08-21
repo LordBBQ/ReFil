@@ -1,7 +1,10 @@
+#include <MobaTools.h>
+
 
 #define PULLER_MOTOR_STEP_PIN 54
 #define PULLER_MOTOR_DIR_PIN 55
 #define PULLER_MOTOR_EN_PIN 38
+#define PULLER_MOTOR_STEPS_PER_ROT 200
 
 #define PULLER_KP 3
 #define PULLER_KI 100
@@ -18,7 +21,7 @@ static unsigned long pullerDeltaTime;
 
 static boolean pullerStepState = false;
 
-MoToStepper pullerStepper((SPOOL_MOTOR_STEPS_PER_ROT * 16), STEPDIR);
+MoToStepper pullerStepper((PULLER_MOTOR_STEPS_PER_ROT * 16), STEPDIR);
 
 
 /**
@@ -31,16 +34,14 @@ void initPuller() {
 
   pinMode(PULLER_MOTOR_EN_PIN, OUTPUT);
   pullerStepper.attach(PULLER_MOTOR_STEP_PIN, PULLER_MOTOR_DIR_PIN);
-  pullerStepper.setRampLen(0);
+  pullerStepper.setRampLen(0.1);
 }
 
-void calculatePullerSpeed(double currentDiameter, double targetDiameter) {
 
-  return 0;//return ((255 / PIDDiameterController::PIDController(PULLER_KP, PULLER_KI, PULLER_KD, currentDiameter, targetDiameter, 50)) + PULLER_DEFAULT_SPEED);
-}
 
 static void movePullerMotor(double rpm) {
   digitalWrite(PULLER_MOTOR_EN_PIN, LOW);
-  pullerStepper.setSpeed(-rpm*10);
+  pullerStepper.setSpeed(10*rpm);
+  pullerStepper.rotate(-1);
 
 } 

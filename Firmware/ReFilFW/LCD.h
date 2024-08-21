@@ -35,18 +35,21 @@ byte lcdLastStatus = 0;
 int lcdLastTemp = 0;
 int lcdLastMotorSpeed = 0;
 int lcdLastMenu = 10;
+int lcdLastSetpoint = 0;
 
 bool lcdLastControlFans = false;
 bool lcdLastControlHeaters = false;
 bool lcdLastControlGantry = false;
 bool lcdLastControlSpooler = false;
 bool lcdLastControlPuller = false;
+bool lcdLastControlAutoExtrusion = false;
 
 bool lcdControlHeaters = false;
 bool lcdControlFans = false;
 bool lcdControlSpool = false;
 bool lcdControlPuller = false;
 bool lcdControlGantry = false;
+bool lcdControlAutoExtrusion = false;
 
 
 /**
@@ -105,6 +108,17 @@ byte motor[] = {
   B00110
 };
 
+byte arrow[] = {
+  B00000,
+  B00100,
+  B00010,
+  B11111,
+  B00010,
+  B00100,
+  B00000,
+  B00000
+};
+
 void clearLine(int line) {
   lcd.setCursor(0, line);
   for(byte n = 0; n < 16; n++) {
@@ -122,14 +136,14 @@ bool getAnyButton() {
   );
 }
 
-void lcdHome(byte status, int temp, int motor) {
-  Serial.println(getAnyButton());
+void lcdHome(byte status, int temp, int motor, int setpoint) {
 
   if(
       (
         !((lcdLastTemp - 1) <= temp <= (lcdLastTemp + 1))||
         lcdLastStatus != status ||
-        lcdLastMotorSpeed != motor
+        lcdLastMotorSpeed != motor ||
+        lcdLastSetpoint != setpoint
       ) || 
       (lcdLastMenu =! currentMenu) ||
       getAnyButton()) {
@@ -161,7 +175,19 @@ void lcdHome(byte status, int temp, int motor) {
         lcd.printByte(2);
         lcd.print(temp);
 
-        lcd.setCursor(5,1);
+        if(setpoint != 0) {
+          if(temp<100) {
+            lcd.setCursor(3,1);
+            lcd.printByte(4);
+            lcd.print(setpoint);
+          } else {
+            lcd.setCursor(4,1);
+            lcd.printByte(4);
+            lcd.print(setpoint);            
+          }
+        }
+
+        lcd.setCursor(10,1);
         lcd.printByte(3);
         lcd.print(motor);
         lcd.print("%");
@@ -170,6 +196,7 @@ void lcdHome(byte status, int temp, int motor) {
         lcdLastTemp = temp;
         lcdLastMotorSpeed = motor;
         lcdLastStatus = status;
+        lcdLastSetpoint = setpoint;
       break;
       case 2:
         clearLine(0);
@@ -184,7 +211,10 @@ void lcdHome(byte status, int temp, int motor) {
             }
             lcd.setCursor(0, 1);
             lcd.print("Heaters:");
-            if(lcdControlHeaters) {
+            if(lcdControlAutoExtrusion) {
+              lcd.setCursor(16-1, 1);
+              lcd.print("-");
+            } else if(lcdControlHeaters) {
               lcd.setCursor(16-2, 1);
               lcd.print("ON");
             } else {
@@ -198,7 +228,10 @@ void lcdHome(byte status, int temp, int motor) {
             }
             lcd.setCursor(0, 1);
             lcd.print("Fans:");
-            if(lcdControlFans) {
+            if(lcdControlAutoExtrusion) {
+              lcd.setCursor(16-1, 1);
+              lcd.print("-");
+            } else if(lcdControlFans) {
               lcd.setCursor(16-2, 1);
               lcd.print("ON");
             } else {
@@ -212,7 +245,10 @@ void lcdHome(byte status, int temp, int motor) {
             }
             lcd.setCursor(0, 1);
             lcd.print("Spooler:");
-            if(lcdControlSpool) {
+            if(lcdControlAutoExtrusion) {
+              lcd.setCursor(16-1, 1);
+              lcd.print("-");
+            } else if(lcdControlSpool) {
               lcd.setCursor(16-2, 1);
               lcd.print("ON");
             } else {
@@ -226,7 +262,10 @@ void lcdHome(byte status, int temp, int motor) {
             }
             lcd.setCursor(0, 1);
             lcd.print("Puller:");
-            if(lcdControlPuller) {
+            if(lcdControlAutoExtrusion) {
+              lcd.setCursor(16-1, 1);
+              lcd.print("-");
+            } else if(lcdControlPuller) {
               lcd.setCursor(16-2, 1);
               lcd.print("ON");
             } else {
@@ -240,12 +279,29 @@ void lcdHome(byte status, int temp, int motor) {
             }
             lcd.setCursor(0, 1);
             lcd.print("Gantry:");
-            if(lcdControlGantry) {
+            if(lcdControlAutoExtrusion) {
+              lcd.setCursor(16-1, 1);
+              lcd.print("-");
+            } else if(lcdControlGantry) {
               lcd.setCursor(16-2, 1);
               lcd.print("ON");
             } else {
               lcd.setCursor(16-3, 1);
               lcd.print("OFF");         
+            }
+          break;
+          case 5:
+            if(lcdLastControlAutoExtrusion =! lcdControlAutoExtrusion) {
+              clearLine(1);
+            }
+            lcd.setCursor(0, 1);
+            lcd.print("Mode:");
+            if(lcdControlAutoExtrusion) {
+              lcd.setCursor(16-4, 1);
+              lcd.print("AUTO");
+            } else {
+              lcd.setCursor(16-6, 1);
+              lcd.print("MANUAL");         
             }
           break;
         }
@@ -274,6 +330,7 @@ void initLCD() {
   lcd.createChar(1, blockChar);
   lcd.createChar(2, temp);
   lcd.createChar(3, motor);
+  lcd.createChar(4, arrow);
 
   pinMode(BUTTON_DOWN_PIN, INPUT_PULLUP);
   pinMode(BUTTON_UP_PIN, INPUT_PULLUP);
@@ -393,21 +450,17 @@ void updateLEDs(byte state) {
 }
 
 void updateMenuFromButtons() {
-  Serial.println(currentMenu);
   if((millis() - lastButtonUpdate) >= buttonUpdateDelay) {
     if((digitalRead(BUTTON_DOWN_PIN) == LOW) && currentMenu%10 != MENU_ITEMS) {
       currentMenu += 1;
     } else if((digitalRead(BUTTON_UP_PIN) == LOW) && currentMenu%10 != 0) {
-      Serial.println("dwn");
 
       currentMenu += -1;    
     } else if((digitalRead(BUTTON_LEFT_PIN) == LOW) && currentMenu/10 != 1 && currentMenu%10 != 1) {
-      Serial.println("left");
       currentMenu += -10;
     } else if((digitalRead(BUTTON_RIGHT_PIN) == LOW) && currentMenu/10 != MENU_DEPTH && currentMenu%10 != 1) {
-          Serial.println("rht");
       currentMenu += 10;
-    } else if ((digitalRead(BUTTON_OK_PIN) == LOW)) {
+    } else if ((digitalRead(BUTTON_OK_PIN) == LOW) && currentMenu != 10) {
       switch(currentMenu%10) {
         case 0:
           lcdControlHeaters = !lcdControlHeaters;
@@ -423,6 +476,14 @@ void updateMenuFromButtons() {
         break;
         case 4:
           lcdControlGantry = !lcdControlGantry;
+        break;
+        case 5:
+          lcdControlAutoExtrusion = !lcdControlAutoExtrusion;
+          lcdControlHeaters = false;
+          lcdControlFans = false;
+          lcdControlSpool = false;
+          lcdControlPuller = false;
+          lcdControlGantry = false;
         break;
         default:
         break;
