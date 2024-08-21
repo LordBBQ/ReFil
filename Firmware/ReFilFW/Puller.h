@@ -1,7 +1,7 @@
 
-#define PULLER_MOTOR_STEP_PIN 101
-#define PULLER_MOTOR_DIR_PIN 102
-#define PULLER_MOTOR_EN_PIN 103
+#define PULLER_MOTOR_STEP_PIN 54
+#define PULLER_MOTOR_DIR_PIN 55
+#define PULLER_MOTOR_EN_PIN 38
 
 #define PULLER_KP 3
 #define PULLER_KI 100
@@ -18,6 +18,9 @@ static unsigned long pullerDeltaTime;
 
 static boolean pullerStepState = false;
 
+MoToStepper pullerStepper((SPOOL_MOTOR_STEPS_PER_ROT * 16), STEPDIR);
+
+
 /**
  * Method to be executed before each new roll, and on first startup
  */
@@ -26,11 +29,9 @@ void initPuller() {
   pullerPreviousTime = 0;
   pullerDeltaTime = 0;
 
-
-  pinMode(PULLER_MOTOR_STEP_PIN, OUTPUT);
-  pinMode(PULLER_MOTOR_DIR_PIN, OUTPUT);
   pinMode(PULLER_MOTOR_EN_PIN, OUTPUT);
-
+  pullerStepper.attach(PULLER_MOTOR_STEP_PIN, PULLER_MOTOR_DIR_PIN);
+  pullerStepper.setRampLen(0);
 }
 
 void calculatePullerSpeed(double currentDiameter, double targetDiameter) {
@@ -39,22 +40,7 @@ void calculatePullerSpeed(double currentDiameter, double targetDiameter) {
 }
 
 static void movePullerMotor(double rpm) {
-  unsigned long previousMicros = micros();
-  unsigned long desiredPulseMicros = ((60*1000*1000)/rpm); //converting rpm to min/r, then converting to sec, ms, us...
-  digitalWrite(PULLER_MOTOR_EN_PIN, HIGH); //pull enable pin high to enguage the driver
+  digitalWrite(PULLER_MOTOR_EN_PIN, LOW);
+  pullerStepper.setSpeed(-rpm*10);
 
-  if(PULLER_MOTOR_DIR_PIN) { //set dir pin
-    digitalWrite(PULLER_MOTOR_DIR_PIN, HIGH);
-  } else {
-    digitalWrite(PULLER_MOTOR_DIR_PIN, LOW);
-  }
-
-  if((micros() - previousMicros) >= (desiredPulseMicros/2)) {
-    previousMicros = micros();
-    digitalWrite(PULLER_MOTOR_STEP_PIN, HIGH);
-    if((micros() - previousMicros) >= (desiredPulseMicros/2)) {
-      previousMicros = micros();
-      digitalWrite(PULLER_MOTOR_STEP_PIN, LOW);
-    }
-  }
 } 

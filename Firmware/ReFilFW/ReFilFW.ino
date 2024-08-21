@@ -25,9 +25,15 @@ void setup() {
   heater0DutyCycle = 0;
   heater1DutyCycle = 0;
   initHeaters();
+  initSpooler();
+  initPuller();
+  homeGantry();
+
+  //moveSpoolMotor(60, true);
 }
 
 void loop() {
+  updateMenuFromButtons();
   
   double target = 260;
   //spinDriveMotor(25);
@@ -61,31 +67,56 @@ void loop() {
     lcdHome(2, getThermistorValue(0), 100);
   }
 
-  // if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true) || (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
-  //   killHeaters();
+  // // if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true) || (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
+  // //   killHeaters();
 
+  // // } else {
+  //   Serial.print("Target: ");
+  //   Serial.println(target);
+  //   Serial.print("T0: ");
+  //   Serial.print(getThermistorValue(0));
+  //    Serial.print("T1: "); 
+  //   Serial.println(getThermistorValue(1));   
+  //   //setHeater(1, target);   
+  //   setHeater(0, target);
+  // spinDriveMotor(1);
+  // if(getThermistorValue(0) >= (target-10)) {
+  //   if(!startSoakTime) {
+  //     soakTimeStart = millis();
+  //     startSoakTime = true;
+  //   } else {
+  //     if(millis() > (soakTimeStart + soakTime)) {
+  //       //spinDriveMotor(17);
+  //     }
+  //   }
   // } else {
-    Serial.print("Target: ");
-    Serial.println(target);
-    Serial.print("T0: ");
-    Serial.print(getThermistorValue(0));
-     Serial.print("T1: "); 
-    Serial.println(getThermistorValue(1));   
-    //setHeater(1, target);   
-    setHeater(0, target);
-  spinDriveMotor(1);
-  if(getThermistorValue(0) >= (target-10)) {
-    if(!startSoakTime) {
-      soakTimeStart = millis();
-      startSoakTime = true;
-    } else {
-      if(millis() > (soakTimeStart + soakTime)) {
-        //spinDriveMotor(17);
-      }
-    }
+  //   startSoakTime = false;
+  // }
+  if(lcdControlGantry) {
+    moveGantry(20, 1);
   } else {
-    startSoakTime = false;
+    moveGantry(20, 0);
   }
-  moveSpoolMotor(1, true);
+
+  if(lcdControlPuller) {
+    movePullerMotor(5);
+  } else {
+    movePullerMotor(0);
+  }
+
+  if(lcdControlSpool) {
+    moveSpoolMotor(5, true);
+  } else {
+    moveSpoolMotor(0, true);
+  }
+  if(getGantryEndstop()) {
+    //spinGantryMotor(0);
+  } else {
+    //spinGantryMotor(5);
+  }
+
+  setFans(lcdControlFans);
+
+
   //delay(100);
 }

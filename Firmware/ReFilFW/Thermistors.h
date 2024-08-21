@@ -115,7 +115,7 @@ boolean checkThermalSaftey(double requestedDutyCycle, double feedbackTemperature
     return true;
   } else { //if threshold is ok, continue to checks
     if(thermalSafteyCycleComplete) { //check if cycle has elapsed, if so run checks
-      Serial.print("trig");
+      //Serial.print("trig");
 
       
       heaterCurrentTemperature[heaterIndex] = feedbackTemperature;
