@@ -1,6 +1,5 @@
 # ReFil
-Open source DIY, affordable 3D Printer filament extruder.
-
+ReFil is a fully custom, mostly 3D Printed 3D Printer Filament Extruder. It allows you to melt down plastic pellets and form 3D printer filament. This saves a lot of money, and also lets the user experiment with combinations of material and colours, even recycling failed parts!
 ![render1](https://github.com/user-attachments/assets/43c00b16-5836-43ca-93c3-6fa36670307e)
 
 ### How it works:
