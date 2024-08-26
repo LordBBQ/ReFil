@@ -379,7 +379,7 @@ void initLCD() {
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0,0);
-  lcd.print("reFil 0.9");
+  lcd.print("reFil 1.0");
   lcd.setCursor(0,1);
   lcd.createChar(0, elipsis);
   lcd.setCursor(0,1);
