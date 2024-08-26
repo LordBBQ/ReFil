@@ -1,25 +1,59 @@
+#include <MobaTools.h>
+
 //#include "PIDController.h"
 //#include "FilamentSensor.h"
 #include "EEPROMManager.h"
-//#include "Spooler.h"
+#include "Spooler.h"
 //#include "TrapezoidProfiler.h"
 //#include "Extruder.h"
 #include "ExtrusionController.h"
+#include "LCD.h"
 
 #define SERIAL_BAUDRATE 115200
 
-int dutyCycle = 0;
+int heater0DutyCycle = 0;
+int heater1DutyCycle = 0;
+
+unsigned long soakTimeStart = 0;
+int soakTime = 360*1000;
+bool startSoakTime = false;
+
+// const byte stepPin = 54;
+// const byte dirPin = 55;
+
+// const int stepsPerRev = 200;    // Steps per revolution - may need to be adjusted
+
+//MoToStepper stepper1( stepsPerRev, STEPDIR );  // create a stepper instance
 
 void setup() {
+  initLCD();
   thermalSafteyHasInit = false;
   Serial.begin(SERIAL_BAUDRATE);  
   //initPIDController();
   initThermalSaftey();
-  dutyCycle = 0;
+  heater0DutyCycle = 0;
+  heater1DutyCycle = 0;
+  initHeaters();
+  initSpooler();
+  initPuller();
+  homeGantry();
+
+  //moveSpoolMotor(60, true);
+
+  //   pinMode(38, OUTPUT);
+  // digitalWrite(38, LOW);
+  // stepper1.attach( stepPin, dirPin );
+  // stepper1.setSpeed( 300 );              // 30 rev/min (if stepsPerRev is set correctly)
+  // stepper1.setRampLen( stepsPerRev / 2); // Ramp length is 1/2 revolution
+  // stepper1.rotate(1);                    // start turning, 1=vorward, -1=backwards         
 }
 
 void loop() {
-  double target = 240;
+  updateMenuFromButtons();
+  
+  double target = 280;
+  //spinDriveMotor(25);
+
   // put your main code here, to run repeatedly:
 //  double thermistorVoltage = ((analogRead(A7) / 1024.0) * 5.0);
 //  double R2 = (thermistorVoltage * R1) / (VIN - (thermistorVoltage));
@@ -28,30 +62,139 @@ void loop() {
 //  Serial.print(R2);
 //  Serial.println(" Ohms");
 //  delay(1000);
-  //dutyCycle = PIDController(HEATER_0_KP, HEATER_0_KI, HEATER_0_KD, target, getThermistorValue(0), 50);
 
-  Serial.print("Thermistor:");
-  Serial.print(getThermistorValue(0));
-  Serial.print(",");
-  Serial.print("Output:");
-  Serial.print(dutyCycle);
-  Serial.print(",");
-  Serial.print("Target:");
-  Serial.println(target);
-  //analogWrite(13, 255);
-  Serial.print("saftey thresh:");
-  Serial.println(heaterFaultLevel[0]);
-  if(checkThermalSaftey(dutyCycle, getThermistorValue(0), 0) == true) {
-    //Serial.print("TRIP");
+
+  // Serial.print("Thermistor:");
+  // Serial.print(getThermistorValue(0));
+  // Serial.print(",");
+  // Serial.print("Output:");
+  // Serial.print(heater0DutyCycle);
+  // Serial.print(",");
+  // Serial.print("Target:");
+  // Serial.println(target);
+  // //analogWrite(13, 255);
+  // Serial.print("saftey thresh:");
+  // Serial.println(heaterFaultLevel[0]);
+  // if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true) || (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
+  //   updateLEDs(10);
+  //   if(lcdControlHeaters) {
+  //       setHeater(0, target);
+  //   } else {
+  //     lcdHome(0, getThermistorValue(0), 100, 0);
+  //     setHeater(0, 0);
+
+  //   }
+  // } else {
+  //   updateLEDs(1);
+  //   if(lcdControlHeaters) {
+  //     lcdHome(2, getThermistorValue(0), 100, target);
+  //   } else {
+  //     lcdHome(2, getThermistorValue(0), 100, 0);
+  //   }
+
+    
+  // }
+
+  if(lcdControlHeaters) {
+    if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true)) { //|| (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
+      lcdHome(0, getThermistorValue(0), 100, target);
+      setHeater(0, 0);
+    } else {
+      lcdHome(2, getThermistorValue(0), 100, target);
+      setHeater(0, target);
+    }
   } else {
-
+    lcdHome(2, getThermistorValue(0), 100, 0);
+    setHeater(0, 0);
   }
 
-  if(checkThermalSaftey(dutyCycle, getThermistorValue(0), 0) == true) {
-    analogWrite(13, 0);
-    Serial.print("TRIP!!!");
+  // // if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true) || (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
+  // //   killHeaters();
+
+  // // } else {
+  //   Serial.print("Target: ");
+  //   Serial.println(target);
+  //   Serial.print("T0: ");
+  //   Serial.print(getThermistorValue(0));
+  //    Serial.print("T1: "); 
+  //   Serial.println(getThermistorValue(1));   
+  //   //setHeater(1, target);   
+  //   setHeater(0, target);
+  // spinDriveMotor(1);
+  // if(getThermistorValue(0) >= (target-10)) {
+  //   if(!startSoakTime) {
+  //     soakTimeStart = millis();
+  //     startSoakTime = true;
+  //   } else {
+  //     if(millis() > (soakTimeStart + soakTime)) {
+  //       //spinDriveMotor(17);
+  //     }
+  //   }
+  // } else {
+  //   startSoakTime = false;
+  // }
+
+  if(lcdControlAutoExtrusion) {
+    setFans(true);
+    moveSpoolToPosition(20, getSpoolRotationDistance(1000, 60, GANTRY_MIN_POS, GANTRY_MAX_POS));
+    Serial.print("s");
+    //Serial.println(getSpoolRotationDistance(1000, 60, GANTRY_MIN_POS, GANTRY_MAX_POS));
+    moveGantryToPosition(20, getGantryAlignmentPosition(GANTRY_MIN_POS, GANTRY_MAX_POS));
+    movePullerMotor(10, true);
+
+    Serial.println(getGantryAlignmentPosition(GANTRY_MIN_POS, GANTRY_MAX_POS));
+
   } else {
-    analogWrite(13, dutyCycle);
+    if(lcdControlGantry) {
+      moveGantry(spoolerToGantryRatio * 7.8, 1);
+    } else {
+      moveGantry(20, 0);
+    }
+
+    if(lcdControlPuller) {
+      movePullerMotor(10  * spoolerToPullerRatio, !lcdControlDirInvert);
+    } else {
+      movePullerMotor(0, true);
+    }
+
+    if(lcdControlSpool) {
+      moveSpoolMotor(8, !lcdControlDirInvert);
+    } else {
+      moveSpoolMotor(0, true);
+    }
+
+  if(lcdControlMotor && readyForMotor) {
+    Serial.println("drvmotor");
+    spinDriveMotor(25);
+  } else {  
+    stopDriveMotor();   
   }
-  
+
+    // if(getGantryEndstop()) {
+    //   spinGantryMotor(0);
+    // } else {
+    //   spinGantryMotor(5);
+    // }
+
+    setFans(lcdControlFans);
+  }
+
+  if(getThermistorValue(0) >= (target - 10)) {
+    if(!startSoakTime) {
+      soakTimeStart = millis();
+      startSoakTime = true;
+    } else if(millis() >= (soakTimeStart + soakTime)) {
+      readyForMotor = true;
+    } else {
+      readyForMotor = false;
+    }
+  } else {
+    readyForMotor = false;
+    soakTimeStart = millis();
+
+  }
+   
+
+
+  //delay(100);
 }

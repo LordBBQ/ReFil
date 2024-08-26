@@ -1,7 +1,10 @@
+#include <MobaTools.h>
 
-#define PULLER_MOTOR_STEP_PIN 101
-#define PULLER_MOTOR_DIR_PIN 102
-#define PULLER_MOTOR_EN_PIN 103
+
+#define PULLER_MOTOR_STEP_PIN 54
+#define PULLER_MOTOR_DIR_PIN 55
+#define PULLER_MOTOR_EN_PIN 38
+#define PULLER_MOTOR_STEPS_PER_ROT 200
 
 #define PULLER_KP 3
 #define PULLER_KI 100
@@ -18,44 +21,32 @@ static unsigned long pullerDeltaTime;
 
 static boolean pullerStepState = false;
 
+MoToStepper pullerStepper((PULLER_MOTOR_STEPS_PER_ROT * 16), STEPDIR);
+
+
 /**
  * Method to be executed before each new roll, and on first startup
  */
-void initSpooler() {
+void initPuller() {
   pullerCurrentTime = 0;
   pullerPreviousTime = 0;
   pullerDeltaTime = 0;
 
-
-  pinMode(PULLER_MOTOR_STEP_PIN, OUTPUT);
-  pinMode(PULLER_MOTOR_DIR_PIN, OUTPUT);
   pinMode(PULLER_MOTOR_EN_PIN, OUTPUT);
-
+  pullerStepper.attach(PULLER_MOTOR_STEP_PIN, PULLER_MOTOR_DIR_PIN);
+  pullerStepper.setRampLen(0.1);
 }
 
-void calculatePullerSpeed(double currentDiameter, double targetDiameter) {
 
-  return ((255 / PIDDiameterController::PIDController(PULLER_KP, PULLER_KI, PULLER_KD, currentDiameter, targetDiameter, 50)) + PULLER_DEFAULT_SPEED);
-}
 
-static void movePullerMotor(double rpm) {
-  unsigned long previousMicros = micros();
-  unsigned long desiredPulseMicros = ((60*1000*1000)/rpm); //converting rpm to min/r, then converting to sec, ms, us...
-  digitalWrite(PULLER_MOTOR_EN_PIN, HIGH); //pull enable pin high to enguage the driver
+static void movePullerMotor(double rpm, bool dir) {
+  digitalWrite(PULLER_MOTOR_EN_PIN, LOW);
+  pullerStepper.setSpeed(10*rpm);
+  if(!dir) {
+    pullerStepper.rotate(1);
 
-  if(PULLER_MOTOR_DIR_PIN) { //set dir pin
-    digitalWrite(PULLER_MOTOR_DIR_PIN, HIGH);
   } else {
-    digitalWrite(PULLER_MOTOR_DIR_PIN, LOW);
+    pullerStepper.rotate(-1);   
   }
 
-  if((micros() - previousMicros) >= (desiredPulseMicros/2)) {
-    previousMicros = micros();
-    digitalWrite(PULLER_MOTOR_STEP_PIN, HIGH);
-    if((micros() - previousMicros) >= (desiredPulseMicros/2)) {
-      previousMicros = micros();
-      digitalWrite(PULLER_MOTOR_STEP_PIN, LOW);
-    }
-  }
 } 
-
