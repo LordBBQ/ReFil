@@ -1,3 +1,4 @@
+#include "Arduino.h"
 #include "Thermistors.h"
 #include "PIDController.h"
 
@@ -16,6 +17,8 @@ void initExtruder() {
   pinMode(HEATER_2_PIN, OUTPUT);
   pinMode(HEATER_3_PIN, OUTPUT);
 
+  pinMode(DRIVE_MOTOR_VP_PIN, OUTPUT);
+
 }
 
 void killHeaters() {
@@ -28,7 +31,11 @@ void killHeaters() {
 void spinDriveMotor(double rpm) {
   float driveOutput = rpm / DRIVE_MOTOR_RPM; //calculate reqd duty cycle of motor based off max rpm
   //analogWrite(DRIVE_MOTOR_VP_PIN, driveOutput * 1023);
-  analogWrite(DRIVE_MOTOR_VP_PIN, 80);
+  analogWrite(DRIVE_MOTOR_VP_PIN, 45);
+}
+
+void stopDriveMotor() {
+  analogWrite(DRIVE_MOTOR_VP_PIN, 0);
 }
 
 bool setHeater(int zone, float setTemp) {

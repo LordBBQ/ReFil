@@ -51,7 +51,7 @@ void setup() {
 void loop() {
   updateMenuFromButtons();
   
-  double target = 260;
+  double target = 280;
   //spinDriveMotor(25);
 
   // put your main code here, to run repeatedly:
@@ -75,20 +75,37 @@ void loop() {
   // //analogWrite(13, 255);
   // Serial.print("saftey thresh:");
   // Serial.println(heaterFaultLevel[0]);
-  if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true) || (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
-    updateLEDs(10);
-    if(lcdControlHeaters) {
+  // if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true) || (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
+  //   updateLEDs(10);
+  //   if(lcdControlHeaters) {
+  //       setHeater(0, target);
+  //   } else {
+  //     lcdHome(0, getThermistorValue(0), 100, 0);
+  //     setHeater(0, 0);
+
+  //   }
+  // } else {
+  //   updateLEDs(1);
+  //   if(lcdControlHeaters) {
+  //     lcdHome(2, getThermistorValue(0), 100, target);
+  //   } else {
+  //     lcdHome(2, getThermistorValue(0), 100, 0);
+  //   }
+
+    
+  // }
+
+  if(lcdControlHeaters) {
+    if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true)) { //|| (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
       lcdHome(0, getThermistorValue(0), 100, target);
+      setHeater(0, 0);
     } else {
-      lcdHome(0, getThermistorValue(0), 100, 0);
+      lcdHome(2, getThermistorValue(0), 100, target);
+      setHeater(0, target);
     }
   } else {
-    updateLEDs(1);
-    if(lcdControlHeaters) {
-      lcdHome(2, getThermistorValue(0), 100, target);
-    } else {
-      lcdHome(2, getThermistorValue(0), 100, 0);
-    }
+    lcdHome(2, getThermistorValue(0), 100, 0);
+    setHeater(0, 0);
   }
 
   // // if((checkThermalSaftey(heater0DutyCycle, getThermistorValue(0), 0) == true) || (checkThermalSaftey(heater1DutyCycle, getThermistorValue(1), 1) == true)) {
@@ -120,29 +137,39 @@ void loop() {
   if(lcdControlAutoExtrusion) {
     setFans(true);
     moveSpoolToPosition(20, getSpoolRotationDistance(1000, 60, GANTRY_MIN_POS, GANTRY_MAX_POS));
+    Serial.print("s");
+    //Serial.println(getSpoolRotationDistance(1000, 60, GANTRY_MIN_POS, GANTRY_MAX_POS));
     moveGantryToPosition(20, getGantryAlignmentPosition(GANTRY_MIN_POS, GANTRY_MAX_POS));
-    movePullerMotor(10);
+    movePullerMotor(10, true);
 
     Serial.println(getGantryAlignmentPosition(GANTRY_MIN_POS, GANTRY_MAX_POS));
 
   } else {
     if(lcdControlGantry) {
-      moveGantry(20, 1);
+      moveGantry(spoolerToGantryRatio * 7.8, 1);
     } else {
       moveGantry(20, 0);
     }
 
     if(lcdControlPuller) {
-      movePullerMotor(5);
+      movePullerMotor(10  * spoolerToPullerRatio, !lcdControlDirInvert);
     } else {
-      movePullerMotor(0);
+      movePullerMotor(0, true);
     }
 
     if(lcdControlSpool) {
-      moveSpoolMotor(5, true);
+      moveSpoolMotor(8, !lcdControlDirInvert);
     } else {
       moveSpoolMotor(0, true);
     }
+
+  if(lcdControlMotor && readyForMotor) {
+    Serial.println("drvmotor");
+    spinDriveMotor(25);
+  } else {  
+    stopDriveMotor();   
+  }
+
     // if(getGantryEndstop()) {
     //   spinGantryMotor(0);
     // } else {
@@ -151,7 +178,22 @@ void loop() {
 
     setFans(lcdControlFans);
   }
-  
+
+  if(getThermistorValue(0) >= (target - 10)) {
+    if(!startSoakTime) {
+      soakTimeStart = millis();
+      startSoakTime = true;
+    } else if(millis() >= (soakTimeStart + soakTime)) {
+      readyForMotor = true;
+    } else {
+      readyForMotor = false;
+    }
+  } else {
+    readyForMotor = false;
+    soakTimeStart = millis();
+
+  }
+   
 
 
   //delay(100);

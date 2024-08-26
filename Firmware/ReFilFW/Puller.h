@@ -39,9 +39,14 @@ void initPuller() {
 
 
 
-static void movePullerMotor(double rpm) {
+static void movePullerMotor(double rpm, bool dir) {
   digitalWrite(PULLER_MOTOR_EN_PIN, LOW);
   pullerStepper.setSpeed(10*rpm);
-  pullerStepper.rotate(-1);
+  if(!dir) {
+    pullerStepper.rotate(1);
+
+  } else {
+    pullerStepper.rotate(-1);   
+  }
 
 } 

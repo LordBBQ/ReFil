@@ -5,7 +5,7 @@
 #define THERMISTOR_3_PIN A7 //TODO
 
 #define HEATER_MINTEMP 10 //degrees c
-#define HEATER_MAXTEMP 280 //degrees c
+#define HEATER_MAXTEMP 300 //degrees c
 
 #define THERMAL_SAFTEY_FAULT_LEVEL_THRESH 200 //how many fault points before a failure is presumed
 #define THERMAL_SAFTEY_FAULT_LEVEL_DEGREDATION 3 //how many fault points are lost per cycle
@@ -122,11 +122,15 @@ boolean checkThermalSaftey(double requestedDutyCycle, double feedbackTemperature
       heaterCurrentDutyCycle[heaterIndex] = requestedDutyCycle;
       
       if(feedbackTemperature <= HEATER_MINTEMP) {
+        Serial.print("T");
+        Serial.println(feedbackTemperature);
         heaterFaultLevel[heaterIndex] = 100 + heaterFaultLevel[heaterIndex];
+        Serial.println("MINTEMP");
         //Serial.print("mintemp");
       }
       if(feedbackTemperature >= HEATER_MAXTEMP) {
         heaterFaultLevel[heaterIndex] = 100 + heaterFaultLevel[heaterIndex];
+        Serial.println("MAXTEMP");
         //Serial.print("maxtemp");
 
       }
@@ -134,6 +138,7 @@ boolean checkThermalSaftey(double requestedDutyCycle, double feedbackTemperature
       if(heaterCurrentDutyCycle[heaterIndex] > THERMAL_RUNAWAY_MIN_GRADIENT_DUTYCYCLE && heaterPreviousDutyCycle[heaterIndex] > THERMAL_RUNAWAY_MIN_GRADIENT_DUTYCYCLE) {
         if((heaterCurrentTemperature[heaterIndex] - heaterPreviousTemperature[heaterIndex]) < THERMAL_RUNAWAY_MIN_GRADIENT_TEMPERATURE) {
           heaterFaultLevel[heaterIndex] = 9 + heaterFaultLevel[heaterIndex];
+          Serial.println("grad");
         }
       }
 

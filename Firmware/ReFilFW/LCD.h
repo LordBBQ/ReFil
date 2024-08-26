@@ -14,7 +14,7 @@
 #define BUTTON_LEFT_PIN 18
 #define BUTTON_OK_PIN 19
 
-#define MENU_ITEMS 5
+#define MENU_ITEMS 7
 #define MENU_DEPTH 2
 
 //LCD main code
@@ -43,6 +43,9 @@ bool lcdLastControlGantry = false;
 bool lcdLastControlSpooler = false;
 bool lcdLastControlPuller = false;
 bool lcdLastControlAutoExtrusion = false;
+bool lcdLastControlMotor = false;
+bool lcdLastControlDirInvert = false;
+
 
 bool lcdControlHeaters = false;
 bool lcdControlFans = false;
@@ -50,6 +53,14 @@ bool lcdControlSpool = false;
 bool lcdControlPuller = false;
 bool lcdControlGantry = false;
 bool lcdControlAutoExtrusion = false;
+bool lcdControlMotor = false;
+bool lcdControlDirInvert = false;
+
+bool readyForMotor = false;
+
+bool buttonWasJustPushed = false;
+
+int directionMultiplier = 1;
 
 
 /**
@@ -192,11 +203,7 @@ void lcdHome(byte status, int temp, int motor, int setpoint) {
         lcd.print(motor);
         lcd.print("%");
 
-        lcdLastUpdate = millis();
-        lcdLastTemp = temp;
-        lcdLastMotorSpeed = motor;
-        lcdLastStatus = status;
-        lcdLastSetpoint = setpoint;
+
       break;
       case 2:
         clearLine(0);
@@ -290,7 +297,7 @@ void lcdHome(byte status, int temp, int motor, int setpoint) {
               lcd.print("OFF");         
             }
           break;
-          case 5:
+          case 6:
             if(lcdLastControlAutoExtrusion =! lcdControlAutoExtrusion) {
               clearLine(1);
             }
@@ -304,10 +311,62 @@ void lcdHome(byte status, int temp, int motor, int setpoint) {
               lcd.print("MANUAL");         
             }
           break;
+          case 5:
+            if(lcdLastControlMotor =! lcdControlMotor) {
+              clearLine(1);
+            }
+            lcd.setCursor(0, 1);
+            lcd.print("Motor:");
+            if(lcdControlAutoExtrusion) {
+              lcd.setCursor(16-1, 1);
+              lcd.print("-");
+            } else if(lcdControlMotor) {
+              if(readyForMotor) {
+                lcd.setCursor(16-2, 1);
+                lcd.print("ON");
+              } else {
+                lcd.setCursor(16-4, 1);
+                lcd.print("WAIT");                
+              }
+
+            } else {
+              lcd.setCursor(16-3, 1);
+              lcd.print("OFF");         
+            }
+          break;
+          case 7:
+            if(lcdLastControlDirInvert =! lcdControlDirInvert) {
+              clearLine(1);
+            }
+            lcd.setCursor(0, 1);
+            lcd.print("Dir:");
+            if(!lcdControlDirInvert) {
+              lcd.setCursor(16-5, 1);
+              lcd.print("SPOOL");
+
+            } else {
+              lcd.setCursor(16-7, 1);
+              lcd.print("UNSPOOL");         
+            }
+          break;
         }
       break; 
     }
     lcdLastMenu = currentMenu;
+    lcdLastControlAutoExtrusion = lcdControlAutoExtrusion;
+    lcdLastControlFans = lcdControlFans;
+    lcdLastControlGantry = lcdControlGantry;
+    lcdLastControlPuller = lcdControlPuller;
+    lcdLastControlSpooler = lcdControlSpool;
+    lcdLastControlHeaters = lcdControlHeaters;
+    lcdLastControlMotor = lcdControlMotor;
+    lcdLastControlDirInvert = lcdControlDirInvert;
+
+    lcdLastUpdate = millis();
+    lcdLastTemp = temp;
+    lcdLastMotorSpeed = motor;
+    lcdLastStatus = status;
+    lcdLastSetpoint = setpoint;
   }
   
 }
@@ -450,7 +509,8 @@ void updateLEDs(byte state) {
 }
 
 void updateMenuFromButtons() {
-  if((millis() - lastButtonUpdate) >= buttonUpdateDelay) {
+  if(!buttonWasJustPushed) {//(millis() - lastButtonUpdate) >= buttonUpdateDelay) {
+    buttonWasJustPushed = true;
     if((digitalRead(BUTTON_DOWN_PIN) == LOW) && currentMenu%10 != MENU_ITEMS) {
       currentMenu += 1;
     } else if((digitalRead(BUTTON_UP_PIN) == LOW) && currentMenu%10 != 0) {
@@ -460,7 +520,7 @@ void updateMenuFromButtons() {
       currentMenu += -10;
     } else if((digitalRead(BUTTON_RIGHT_PIN) == LOW) && currentMenu/10 != MENU_DEPTH && currentMenu%10 != 1) {
       currentMenu += 10;
-    } else if ((digitalRead(BUTTON_OK_PIN) == LOW) && currentMenu != 10) {
+    } else if ((digitalRead(BUTTON_OK_PIN) == LOW) && (currentMenu/10 != 1)) {
       switch(currentMenu%10) {
         case 0:
           lcdControlHeaters = !lcdControlHeaters;
@@ -477,7 +537,7 @@ void updateMenuFromButtons() {
         case 4:
           lcdControlGantry = !lcdControlGantry;
         break;
-        case 5:
+        case 6:
           lcdControlAutoExtrusion = !lcdControlAutoExtrusion;
           lcdControlHeaters = false;
           lcdControlFans = false;
@@ -485,14 +545,28 @@ void updateMenuFromButtons() {
           lcdControlPuller = false;
           lcdControlGantry = false;
         break;
+        case 5:
+          lcdControlMotor = !lcdControlMotor;
+        break;
+        case 7:
+          lcdControlDirInvert = !lcdControlDirInvert;
+          if(lcdControlDirInvert) {
+            directionMultiplier = -1;
+          } else {
+            directionMultiplier = 1;
+          }
+        break;
         default:
         break;
+      }
     }
-    }
-    if(getAnyButton()) {
-      lastButtonUpdate = millis();    
+    // if(getAnyButton()) {
+    //   lastButtonUpdate = millis();    
 
-    }
+    // }
+  }
+  if(!getAnyButton()) {
+    buttonWasJustPushed = false;
   }
   
 }

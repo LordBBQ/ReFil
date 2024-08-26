@@ -1,8 +1,8 @@
 #include <MobaTools.h> //stepper control via interval
 
 #include "Arduino.h"
-#define SPOOL_MOTOR_STEPS_PER_ROT 200
-#define GANTRY_MOTOR_STEPS_PER_ROT 200
+#define SPOOL_MOTOR_STEPS_PER_ROT 200*16*4*2.5*2
+#define GANTRY_MOTOR_STEPS_PER_ROT 200 * 2
 
 #define GANTRY_ENDSTOP_PIN 3
 
@@ -17,7 +17,7 @@
 #define GANTRY_MOTOR_EN_PIN 24
 
 #define GANTRY_MIN_POS 100
-#define GANTRY_MAX_POS 2000
+#define GANTRY_MAX_POS 4750
 
 static unsigned long currentTime;
 static unsigned long previousTime;
@@ -27,9 +27,16 @@ static boolean stepState = false;
 
 bool gantryDir = false;
 
-int spoolStartingDiameter = 60;
+int spoolStartingDiameter = 83;
 int spoolEndDiameter = 200;
 int spoolWidth = 60;
+int windingsPerLayer = spoolWidth / TARGET_FILAMENT_DIAMETER;
+ 
+
+double spoolDefaultTangentalRatio = spoolStartingDiameter*PI;
+double pullerDefaultTangentalRatio = 6.5*PI;
+double spoolerToPullerRatio =  (spoolDefaultTangentalRatio/pullerDefaultTangentalRatio) * 10;//4.5;
+double spoolerToGantryRatio = TARGET_FILAMENT_DIAMETER / ((GANTRY_MAX_POS - GANTRY_MIN_POS) / spoolWidth); //1 rev = fil_dia travel / (end-start)
 
 unsigned long currentSpoolMicros = micros();
 unsigned long previousSpoolMicros = micros();
@@ -50,8 +57,11 @@ unsigned long gantryHomePreviousTime = 0;
 int gantryHomeBounceTime = 1500;
 boolean spoolWindingDirectionInvert = false; //default to back --> front
 
-MoToStepper spoolStepper((SPOOL_MOTOR_STEPS_PER_ROT * 16*8), STEPDIR);
-MoToStepper gantryStepper((SPOOL_MOTOR_STEPS_PER_ROT * 16), STEPDIR);
+int spoolBaseRotTime = 12;
+int timeForFullLayer = spoolBaseRotTime * windingsPerLayer;
+
+MoToStepper spoolStepper((SPOOL_MOTOR_STEPS_PER_ROT), STEPDIR);
+MoToStepper gantryStepper((GANTRY_MOTOR_STEPS_PER_ROT * 16), STEPDIR);
 
 /**
  * Method to be executed before each new roll, and on first startup
@@ -61,7 +71,7 @@ void initSpooler() {
 
   pinMode(SPOOL_MOTOR_EN_PIN, OUTPUT);
   spoolStepper.attach(SPOOL_MOTOR_STEP_PIN, SPOOL_MOTOR_DIR_PIN);
-  spoolStepper.setRampLen((SPOOL_MOTOR_STEPS_PER_ROT)/6);
+  spoolStepper.setRampLen(1);
 
   pinMode(GANTRY_MOTOR_EN_PIN, OUTPUT);
   gantryStepper.attach(GANTRY_MOTOR_STEP_PIN, GANTRY_MOTOR_DIR_PIN);
@@ -93,13 +103,13 @@ bool getGantryEndstop() {
 static long getSpoolRotationDistance(double desiredPullSpeed, double spoolStartDiameter, double spoolStartPos, double spoolEndPos) {
   int spoolEffectiveWindingsPerLayer = 20;//int((spoolEndPos - spoolStartPos) / TARGET_FILAMENT_DIAMETER);
   //calculate the effective diameter of the spool based on num of layers, remembering to add 1/2 of the diameter for the center of the filament strand.
-  double spoolEffectiveDiameter = spoolStartDiameter + (rotationCount / spoolEffectiveWindingsPerLayer * TARGET_FILAMENT_DIAMETER + TARGET_FILAMENT_DIAMETER/2);
+  double spoolEffectiveDiameter = spoolStartDiameter + (rotationCount * TARGET_FILAMENT_DIAMETER) + (TARGET_FILAMENT_DIAMETER/2);
   //calculate the effective circumference of one layer of the spool based on effective diameter
   double spoolEffectiveCircumference = spoolEffectiveDiameter * PI;
   unsigned long timeSinceLastUpdate = currentSpoolMicros - previousSpoolMicros;
 
   double requiredRotationDistance = desiredPullSpeed * (timeSinceLastUpdate/1000/1000) ; //caclulate requried extrusion ammount
-  double requiredRotationSteps = requiredRotationDistance/spoolEffectiveCircumference * 200 * 16 * 8;
+  double requiredRotationSteps = requiredRotationDistance/spoolEffectiveCircumference * SPOOL_MOTOR_STEPS_PER_ROT;
 
   // Serial.print("Windings per layer ");
   // Serial.println(spoolEffectiveWindingsPerLayer);
@@ -130,7 +140,7 @@ static long getSpoolRotationDistance(double desiredPullSpeed, double spoolStartD
   previousSpoolMicros = currentSpoolMicros;
 
   //return (spoolCurrentPosition += requiredRotationSteps);
-  return requiredRotationDistance;
+  return requiredRotationSteps;
 }
 
 void calculatePullerSpeed(double currentDiameter, double targetDiameter) {
@@ -157,7 +167,7 @@ static double getGantryAlignmentPosition(double spoolStartPos, double spoolEndPo
 
 static void moveSpoolMotor(double rpm, bool dir) {
   digitalWrite(SPOOL_MOTOR_EN_PIN, LOW);
-  spoolStepper.setSpeed(rpm*10);
+  spoolStepper.setSpeed(( rpm));//*10*(5/12));
   if(dir) {
     spoolStepper.rotate(1);
   } else {
@@ -244,7 +254,7 @@ void homeGantryNoHalt() {
 */
 void moveGantry(double velocity, byte mode) {
 
-  gantryStepper.setSpeed(velocity*1);
+  gantryStepper.setSpeed(velocity  * 10);
     switch(mode) {
       case 1: //0
           if(!gantryStepper.moving()) {
